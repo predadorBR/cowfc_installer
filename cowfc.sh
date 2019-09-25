@@ -21,19 +21,25 @@ echo "You already installed CoWFC. There is no need to re-run it.
 Perhaps some time down the road we can offer an uninstall option.
 For now, if you wish to uninstall everything, just nuke your system.
 You shouldn't have anything else on it anyways."
+echo "If you only want to RESET your dwc server, just delete gpcm.db and storage.db (don't forget to reboot of course)";
+echo "In you want UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
+nuke your system, re-install everything with this script and restore gpcm.db and storage.db"
 exit 999
 fi
 # ensure running as root
 if [ "$(id -u)" != "0" ]; then
-  exec sudo "$0" "$@" 
+  exec sudo "$0" "$@"
 fi
 
 # We will test internet connectivity using ping
-if ping -c 4 google.com >/dev/nul ; then
-	echo "Internet is OK" 
-else 
-	echo "Internet connection test failed!"
-	exit 1 
+if ping -c 4 torproject.org >/dev/nul ; then
+	echo "Internet is OK"
+else
+	if ping -c 4 wikipedia.org >/dev/nul ; then
+		echo "Internet is OK"
+	else
+		echo "Internet connection test failed!"
+		exit 1
 fi
 
 # We'll assume the user is from an English locale
@@ -57,7 +63,7 @@ mod1="proxy" # This is a proxy mod that is dependent on the other 2
 mod2="proxy_http" # This is related to mod1
 mod3="php7.1"
 UPDATE_FILE="$0.tmp"
-UPDATE_BASE="https://raw.githubusercontent.com/kyle95wm/cowfc_installer/master/cowfc.sh"
+UPDATE_BASE="https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc.sh"
 # Functions
 
 function update {
@@ -391,7 +397,7 @@ rm -rf /var/www/html/*
 #wget https://html5up.net/landed/download -O html5up-landed.zip
 #unzip html5up-landed.zip -d landed
 # We could put varous cp commands here to copy the needed files
-		
+
 # Then we will copy the website files from our CoWFC Git
 cp /var/www/CoWFC/Web/* /var/www/html -R
 chmod 777 /var/www/html/bans.log
@@ -424,6 +430,7 @@ elif [ -f /var/www/.aws_install ] ; then
 else
     echo "It looks like you are not running on a supported OS."
     echo "Please open an issue and request support for this platform."
+    echo "Actually Ubuntu 14.04 and 16.04 are supported."
 fi
 fi
 
@@ -439,7 +446,7 @@ if [ "$CANRUN" == "TRUE" ] ; then
         # Then we will check to see if the Gits for CoWFC and dwc_network_server_emulator exist
         if [ ! -d "/var/www/CoWFC" ] ; then
             echo "Git for CoWFC does not exist in /var/www/"
-	    while ! git clone https://github.com/kyle95wm/CoWFC.git && [ "$C1" -le "4" ] ; do
+	    while ! git clone https://github.com/EnergyCube/CoWFC.git && [ "$C1" -le "4" ] ; do
 	    	echo "GIT CLONE FAILED! Retrying....."
             (( C1=C1+1 ))
 	    done
@@ -450,8 +457,8 @@ fi
         fi
         if [ ! -d "/var/www/dwc_network_server_emulator" ] ; then
             echo "Git for dwc_network_server_emulator does not exist in /var/www"
-            #git clone https://github.com/mh9924/dwc_network_server_emulator.git
-            while ! git clone https://github.com/kyle95wm/dwc_network_server_emulator.git && [ "$C2" -le "4" ] ; do
+            #git clone https://github.com/EnergyCube/dwc_network_server_emulator.git
+            while ! git clone https://github.com/EnergyCube/dwc_network_server_emulator.git && [ "$C2" -le "4" ] ; do
             	echo "GIT CLONE FAILED! Retrying......"
                 (( C2=C2+1 ))
             done

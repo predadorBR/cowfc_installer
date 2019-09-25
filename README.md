@@ -1,6 +1,6 @@
 # cowfc
 
-This script installs the CoWFC front-end and back-end from https://github.com/mh9924/CoWFC
+This script installs the CoWFC front-end and back-end from https://github.com/EnergyCube/CoWFC
 
 # CONTRIBUTING
 
