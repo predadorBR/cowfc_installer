@@ -34,12 +34,11 @@ fi
 # We will test internet connectivity using ping
 if ping -c 4 torproject.org >/dev/nul ; then
 	echo "Internet is OK"
+elif ping -c 4 wikipedia.org >/dev/nul ; then
+	echo "Internet is OK"
 else
-	if ping -c 4 wikipedia.org >/dev/nul ; then
-		echo "Internet is OK"
-	else
-		echo "Internet connection test failed!"
-		exit 1
+	echo "Internet connection test failed!"
+	exit 1
 fi
 
 # We'll assume the user is from an English locale
