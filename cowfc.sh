@@ -333,13 +333,13 @@ read -rp "Please enter the SECRET KEY you got from setting up reCaptcha: " secre
 read -rp "Please enter the SITE KEY you got from setting up reCaptcha: " sitekey
 echo "Thank you! I will now add your SECRET KEY and SITE KEY to /var/www/html/_admin/Auth/Login.php"
 # Replace SECRET_KEY_HERE with the secret key from our $secretkey variable
-#sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/_admin/Auth/Login.php
-sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/config.ini
+#sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/_admin/Auth/Login.php
+sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/config.ini
 # Replace SITE_KEY_HERE with the site key from our $sitekey variable
 #sed -i -e "s/SITE_KEY_HERE/$sitekey/g" /var/www/html/_admin/Auth/Login.php
-sed -i -e "s/recaptcha_site = SITE_KEY_HERE/recaptcha_site = $sitekey/g" /var/www/html/config.ini
+sed -i -e "s/recaptcha_site = SITE_KEY_HERE/recaptcha_site = $sitekey/g" /var/www/config.ini
 else
-sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/html/config.ini
+sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/config.ini
 fi
 }
 function set-server-name {
@@ -350,7 +350,7 @@ if [ -z "$servernameconfig" ] ; then
 echo "Using CoWFC as the server name."
 else
 echo "Setting server name to $servernameconfig"
-sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
+sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/config.ini
 fi
 }
 function add-cron {
