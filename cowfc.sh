@@ -483,6 +483,9 @@ set-server-name # Set your server's name
 cat >>/etc/apache2/apache2.conf <<EOF
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
 EOF
+echo "Moving the configuration file for more security..."
+mv /var/www/html/config.ini /var/www/config.ini
+echo "Done!"
 echo "Thank you for installing CoWFC."
 echo "If you wish to access the admin GUI, please go to http://$IP/?page=admin&section=Dashboard"
 read -rp "Please hit the ENTER key to reboot now, or press ctrl+c and reboot whenever it is convenient for you: [ENTER] " rebootenterkey
