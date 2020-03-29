@@ -1,40 +1,47 @@
 #!/bin/bash
-echo "##### WARNING!!!!! ##### - Recently, Wiimmfi has undergone some changes which makes it so that their servers are more secure from hackers."
+echo "########## !!!!! WARNING !!!!! ##########"
+echo "Recently, Wiimmfi has undergone some changes which makes it so that their servers are more secure from hackers."
 echo "Having said that, this means that the CoWFC fork will not be getting the security patch, as it is unclear how it is possible. For the time being, you accept that you run your own server with a chance that hackers will be able to execute code over the MKW network."
-echo "This might mean that hackers can in theory, brick consoles. Pressing ENTER will confirm that you accept the risks."
-read -rp "Please press ENTER to accept the risk: "
+echo "This might mean that hackers can in theory, brick consoles."
+read -rp "Please type ACCEPT to accept the risk: "
+if [ "$REPLY" != "ACCEPT" ] ; then
+	echo "Verification FAILED!"
+	exit 2
+fi
 read -rp "Just in case you were trigger-happy, I'll need you to type ACCEPT.: "
 if [ "$REPLY" != "ACCEPT" ] ; then
 	echo "Verification FAILED!"
 	exit 2
 fi
-# DWC Network Installer script by kyle95wm/beanjr - re-written for CoWFC
+# DWC Network Installer script by kyle95wm/beanjr/EnergyCube - re-written for CoWFC
 # Warn Raspberry Pi users - probably a better way of doing this
 if [ -d /home/pi/ ] ; then
     echo "THIS SCRIPT IS NOT SUPPORTED ON RASPBERRY PI!"
-    echo "Please use the older script here: https://github.com/kyle95wm/dwc_network_installer"
+    echo "Please use the older script here: https://github.com/EnergyCube/dwc_network_installer"
     exit 1
 fi
 # Check if we already installed the server
 if [ -f /etc/.dwc_installed ] ; then
 echo "You already installed CoWFC. There is no need to re-run it.
 Perhaps some time down the road we can offer an uninstall option.
-For now, if you wish to uninstall everything, just nuke your system.
 You shouldn't have anything else on it anyways."
 echo "If you only want to RESET your dwc server, just delete gpcm.db and storage.db (don't forget to reboot of course)";
-echo "In you want UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
+echo "In you want to UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
 nuke your system, re-install everything with this script and restore gpcm.db and storage.db"
+echo "And if you wish to uninstall everything, just nuke your system."
 exit 999
 fi
 # ensure running as root
 if [ "$(id -u)" != "0" ]; then
-  exec sudo "$0" "$@"
+  exec sudo "$0" "$@" 
 fi
 
 # We will test internet connectivity using ping
-if ping -c 4 torproject.org >/dev/nul ; then
+if ping -c 2 duckduckgo.com >/dev/nul ; then
 	echo "Internet is OK"
-elif ping -c 4 wikipedia.org >/dev/nul ; then
+elif ping -c 2 wikipedia.org >/dev/nul ; then
+	echo "Internet is OK"
+elif ping -c 2 torproject.org >/dev/nul ; then
 	echo "Internet is OK"
 else
 	echo "Internet connection test failed!"
@@ -239,7 +246,7 @@ sleep 3s
 echo "What is your EXTERNAL IP?"
 echo "NOTE: If you plan on using this on a LAN, put the IP of your Linux system instead"
 echo "It's also best practice to make this address static in your /etc/network/interfaces file"
-echo "your LAN IP is"
+echo "Your LAN IP is"
 hostname  -I | cut -f1 -d' '
 echo "Your external IP is:"
 curl -4 -s icanhazip.com
@@ -274,6 +281,7 @@ fi
     echo "Creating file to tell the script you already added the repo"
     touch "/var/www/.php71-added"
     echo "I will now reboot your server to free up resources for the next phase"
+    sleep 3s
     reboot
     exit
 else
@@ -333,13 +341,13 @@ read -rp "Please enter the SECRET KEY you got from setting up reCaptcha: " secre
 read -rp "Please enter the SITE KEY you got from setting up reCaptcha: " sitekey
 echo "Thank you! I will now add your SECRET KEY and SITE KEY to /var/www/html/_admin/Auth/Login.php"
 # Replace SECRET_KEY_HERE with the secret key from our $secretkey variable
-#sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/_admin/Auth/Login.php
-sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/config.ini
+#sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/_admin/Auth/Login.php
+sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/config.ini
 # Replace SITE_KEY_HERE with the site key from our $sitekey variable
 #sed -i -e "s/SITE_KEY_HERE/$sitekey/g" /var/www/html/_admin/Auth/Login.php
-sed -i -e "s/recaptcha_site = SITE_KEY_HERE/recaptcha_site = $sitekey/g" /var/www/config.ini
+sed -i -e "s/recaptcha_site = SITE_KEY_HERE/recaptcha_site = $sitekey/g" /var/www/html/config.ini
 else
-sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/config.ini
+sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/html/config.ini
 fi
 }
 function set-server-name {
@@ -350,7 +358,7 @@ if [ -z "$servernameconfig" ] ; then
 echo "Using CoWFC as the server name."
 else
 echo "Setting server name to $servernameconfig"
-sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/config.ini
+sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
 fi
 }
 function add-cron {
@@ -395,8 +403,8 @@ rm -rf /var/www/html/*
 
 #wget https://html5up.net/landed/download -O html5up-landed.zip
 #unzip html5up-landed.zip -d landed
-# We could put varous cp commands here to copy the needed files
 
+# We could put varous cp commands here to copy the needed files
 # Then we will copy the website files from our CoWFC Git
 cp /var/www/CoWFC/Web/* /var/www/html -R
 chmod 777 /var/www/html/bans.log
@@ -456,7 +464,6 @@ fi
         fi
         if [ ! -d "/var/www/dwc_network_server_emulator" ] ; then
             echo "Git for dwc_network_server_emulator does not exist in /var/www"
-            #git clone https://github.com/EnergyCube/dwc_network_server_emulator.git
             while ! git clone https://github.com/EnergyCube/dwc_network_server_emulator.git && [ "$C2" -le "4" ] ; do
             	echo "GIT CLONE FAILED! Retrying......"
                 (( C2=C2+1 ))
@@ -486,21 +493,22 @@ EOF
 echo "Moving the configuration file for more security..."
 mv /var/www/html/config.ini /var/www/config.ini
 echo "Done!"
+# Let's make our hidden file so that our script will know that we've already installed the server
+# This will prevent accidental re-runs
+echo "Finishing..."
+touch /etc/.dwc_installed
 echo "Thank you for installing CoWFC."
 echo "If you wish to access the admin GUI, please go to http://$IP/?page=admin&section=Dashboard"
 read -rp "Please hit the ENTER key to reboot now, or press ctrl+c and reboot whenever it is convenient for you: [ENTER] " rebootenterkey
 if [ -z "$rebootenterkey" ] ; then
 reboot
 fi
-# Let's make our hidden file so that our script will know that we've already installed the server
-# This will prevent accidental re-runs
-touch /etc/.dwc_installed
 reboot
 exit 0
 # DO NOT PUT COMMANDS UNDER THIS FI
 fi
 else
     echo "Sorry, you do not appear to be running a supported Opperating System."
-    echo "Please make sure you are running Ubuntu 14.04, and try again!"
+    echo "Please make sure you are running Ubuntu 14.04 or Ubuntu 16.04, and try again!"
     exit 1
 fi

@@ -7,26 +7,29 @@ This script installs the CoWFC front-end and back-end from https://github.com/En
 Please open pull requests for the dev branch.
 
 # How to use
-## Phase 1
-Run the following commands:
--	mkdir /var/www
--	cd /var/www
--	chmod +x cowfc.sh
--	./cowfc.sh
 
-The script will update your system. It will then ask you to add the PHP 7.1 repository to APT. Press ENTER
+## Phase 1
+`mkdir /var/www ; cd /var/www && wget https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc.sh && chmod +x cowfc.sh && ./cowfc.sh`
+
+or
+
+-	`mkdir /var/www`
+-	`cd /var/www`
+-	`wget https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc.sh`
+-	`chmod +x cowfc.sh`
+-	`./cowfc.sh`
 
 ## Phase 2
+After system reboot : `cd /var/www && ./cowfc.sh`
 
-After reboot, run the following commands:
--	cd /var/www
--	./cowfc.sh
+or
 
-The script will continue the install and reboot your server when done
+-	`cd /var/www`
+-	`./cowfc.sh`
 
 # NOTES
 
 This script comes in 3 phases. Each phase involves a reboot
 -	Add the PHP 7.1 repo
 -	Continue CoWFC install
--	Reboot after CoWFC instal
+-	Reboot after CoWFC install
