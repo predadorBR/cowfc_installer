@@ -4,6 +4,7 @@ CoWFC Installer
 This script installs the CoWFC front-end and back-end from https://github.com/EnergyCube/CoWFC
 
 ✅ Support Ubuntu 14.04 & 16.04
+
 ⚠️ Experimental script for Debian (! Only VM tested !)
 
 🔨 Contributing
@@ -14,7 +15,7 @@ Please open pull requests.
 🔧 Error reporting
 -------
 
-Create a new issue and communicate all information that you can.
+Create a new issue and communicate all informations that you can.
 
 📝 How to use
 -------
@@ -44,7 +45,7 @@ or
 -------
 
 This script comes in 3 phases. Each phase involves a reboot
--	Add the PHP 7.1 repo
+-	Add the PHP 7.1 repo (7.3 for Debian)
 -	Continue CoWFC install
 -	Reboot after CoWFC install
 
