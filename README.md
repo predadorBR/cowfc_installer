@@ -3,7 +3,7 @@ CoWFC Installer
 
 This script installs the CoWFC front-end and back-end from https://github.com/EnergyCube/CoWFC
 
-✅ Support Ubuntu 14.04 & 16.04
+✅ Support Ubuntu 14.04 & 16.04 (& Experimental 20.04)
 
 ⚠️ Experimental script for Debian (! Only VM tested !)
 

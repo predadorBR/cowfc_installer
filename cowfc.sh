@@ -37,14 +37,13 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # We will test internet connectivity using ping
-if ping -c 2 duckduckgo.com >/dev/nul ; then
-	echo "Internet is OK"
-elif ping -c 2 wikipedia.org >/dev/nul ; then
+if ping -c 2 github.com >/dev/nul ; then
 	echo "Internet is OK"
 elif ping -c 2 torproject.org >/dev/nul ; then
 	echo "Internet is OK"
 else
-	echo "Internet connection test failed!"
+	echo "Internet Connection Test Failed!"
+	echo "If you want to bypass internet check use -s arg!"
 	exit 1
 fi
 
@@ -270,6 +269,9 @@ clear
 }
 
 function install_required_packages {
+echo "echo "Installing required packages...""
+# Add required package requires packages
+sudo apt install curl git net-tools dnsmasq -y
 # Add PHP 7.1 repo
 if [ ! -f "/var/www/.php71-added" ] ; then
     echo "Adding the PHP 7.1 repository. Please follow any prompts."
@@ -430,14 +432,14 @@ fi
 # but if we're running Debian, it should be enough for what we need this check
 # to do.
 if [ -f /etc/lsb-release ] ; then
-if grep -q "14.04" /etc/lsb-release || grep -q "16.04" /etc/lsb-release ; then
+if grep -q "14.04" /etc/lsb-release || grep -q "16.04" /etc/lsb-release || grep -q "20.04" /etc/lsb-release ; then
     CANRUN="TRUE"
 elif [ -f /var/www/.aws_install ] ; then
     CANRUN="TRUE"
 else
     echo "It looks like you are not running on a supported OS."
     echo "Please open an issue and request support for this platform."
-    echo "Actually Ubuntu 14.04 and 16.04 are supported."
+    echo "Actually Ubuntu 14.04, 16.04 and 20.04 are supported."
 fi
 fi
 
@@ -509,6 +511,6 @@ exit 0
 fi
 else
     echo "Sorry, you do not appear to be running a supported Opperating System."
-    echo "Please make sure you are running Ubuntu 14.04 or Ubuntu 16.04, and try again!"
+    echo "Please make sure you are running Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 20.04, and try again!"
     exit 1
 fi
