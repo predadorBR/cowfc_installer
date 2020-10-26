@@ -393,6 +393,7 @@ rm -rf /var/www/html/*
 
 # We could put varous cp commands here to copy the needed files
 # Then we will copy the website files from our CoWFC Git
+mkdir /var/www/html
 cp /var/www/CoWFC/Web/* /var/www/html -R
 chmod 777 /var/www/html/bans.log
 # Let's restart Apache now
