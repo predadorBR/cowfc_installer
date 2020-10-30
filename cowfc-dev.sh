@@ -280,9 +280,8 @@ function config_mysql() {
     echo "2: Second Rank"
     echo "3: Third Rank"
     read -rp "Please enter a rank number [1-3]: " firstuserrank
-    printf "\033c"
     echo -e "\e[1;33mFinnaly, we need a password for the mysql user 'cowfc'.\e[1;0m"
-    read -rp "Please enter a password for cowfc user (MySQL): " password
+    read -rp "Please enter a password for cowfc user (MySQL): " password_db
     echo "That's all, I'll need for now."
     echo -e "\e[1;33mWe will now continue to configure MYSQL server...\e[1;0m"
     echo "Setting up the cowfc users database"
@@ -290,12 +289,13 @@ function config_mysql() {
     echo "Now importing dumped cowfc database..."
     mysql -u root </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-    echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root
-    echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY 'passwordhere';" | mysql -u root
+    echo "INSERT INTO users (Username, Password, Rank) VALUES ('$firstuser','$hash','$firstuserrank');" | mysql -u root
+    echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY '$password_db';" | mysql -u root
     echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
     echo "FLUSH PRIVILEGES;" | mysql -u root
     sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
     sed -i -e "s/db_user = root/db_user = cowfc/g" /var/www/html/config.ini
+    sed -i -e "s/db_pass = passwordhere/db_pass = $password_db/g" /var/www/html/config.ini
 }
 
 function re() {
