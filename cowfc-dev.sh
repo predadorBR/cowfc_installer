@@ -248,19 +248,19 @@ function install_required_packages() {
     apt install -y python3-software-properties python2.7 python-twisted
 
     # Add php7.4 repo
-    sudo apt -y install lsb-release apt-transport-https ca-certificates
-    sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
+    apt -y install lsb-release apt-transport-https ca-certificates
+    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
     # Refresh
-    sudo apt update
+    apt update
     # Install php7.4
-    sudo apt -y install php7.4
+    apt -y install php7.4
 
     # Install MySQL (MariaDB)
-    sudo apt update
-    sudo apt -y install mariadb-server
-    sudo apt -y install php7.4-mysql
-    sudo apt -y install sqlite php7.4-sqlite3
+    apt update
+    apt -y install mariadb-server
+    apt -y install php7.4-mysql
+    apt -y install sqlite php7.4-sqlite3
     # apt-get -y install mysql-server
 }
 
