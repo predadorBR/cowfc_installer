@@ -287,7 +287,7 @@ function config_mysql() {
     echo "Setting up the cowfc users database"
     echo "Create database cowfc" | mysql -u root
     echo "Now importing dumped cowfc database..."
-    mysql -u root </var/www/CoWFC/SQL/cowfc.sql
+    mysql -u root cowfc </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
     echo "INSERT INTO users (Username, Password, Rank) VALUES ('$firstuser','$hash','$firstuserrank');" | mysql -u root cowfc
     echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY '$password_db';" | mysql -u root
