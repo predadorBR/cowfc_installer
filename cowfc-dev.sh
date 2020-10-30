@@ -1,14 +1,11 @@
-# CoWFC Installer Based on re-written for CoWFC based on dwc install script by kyle95wm/beanjr -
-# Exit Info
-# Verification Fail : 2
-# Already Installed : 3
-# Connection Error : 4
-
+# CoWFC Installer
+# By EnergyCube (Based on beanjr script and the re-written script by kyle95wm)
 # Ensure running as root
 if [ "$(id -u)" != "0" ]; then
     exec sudo "$0" "$@"
 fi
-
+mkdir /var/www
+cd /var/www
 # Check if we already installed the server
 if [ -f /etc/.dwc_installed ]; then
     printf "\033c"
@@ -266,7 +263,7 @@ function install_required_packages() {
 
 function config_mysql() {
     printf "\033c"
-    echo -e "\e[1;33mWe will now configure MYSQL server...\e[1;0m"
+    echo -e "\e[1;33mWe will now configure MySQL...\e[1;0m"
     # Config MySQL Password
     debconf-set-selections <<<'mysql-server mysql-server/root_password password passwordhere'
     debconf-set-selections <<<'mysql-server mysql-server/root_password_again password passwordhere'
@@ -277,7 +274,6 @@ function config_mysql() {
     read -rp "Please enter the username you wish to use: " firstuser
     read -rp "Please enter a password: " password
     hash=$(/var/www/CoWFC/SQL/bcrypt-hash "$password")
-    printf "\033c"
     echo "We will now set the rank for $firstuser"
     echo "At the moment, this does nothing. However in later releases, we plan to restrict who can do what."
     echo "1: First Rank"
@@ -285,10 +281,12 @@ function config_mysql() {
     echo "3: Third Rank"
     read -rp "Please enter a rank number [1-3]: " firstuserrank
     printf "\033c"
+    echo -e "\e[1;33mFinnaly, we need a password for the mysql user 'cowfc'.\e[1;0m"
+    read -rp "Please enter a password for cowfc user (MySQL): " password
     echo "That's all, I'll need for now."
     echo -e "\e[1;33mWe will now continue to configure MYSQL server...\e[1;0m"
     echo "Setting up the cowfc users database"
-    echo "create database cowfc" | mysql -u root
+    echo "Create database cowfc" | mysql -u root
     echo "Now importing dumped cowfc database..."
     mysql -u root </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
@@ -296,7 +294,8 @@ function config_mysql() {
     echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY 'passwordhere';" | mysql -u root
     echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
     echo "FLUSH PRIVILEGES;" | mysql -u root
-    sed -i -e "s/db_user = 'root'/db_user = 'cowfc'/g" /var/www/html/config.ini
+    sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
+    sed -i -e "s/db_user = root/db_user = cowfc/g" /var/www/html/config.ini
 }
 
 function re() {
