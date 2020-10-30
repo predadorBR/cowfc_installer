@@ -59,7 +59,7 @@ fi
 
 function create_apache_vh_nintendo() {
     # This function will create virtual hosts for Nintendo's domains in Apache
-    echo "Creating Nintendo virtual hosts...."
+    echo -e "\e[1;33mCreating Nintendo virtual hosts...\e[1;0m"
     touch /etc/apache2/sites-available/gamestats2.gs.nintendowifi.net.conf
     touch /etc/apache2/sites-available/gamestats.gs.nintendowifi.net.conf
     touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.nintendowifi.net.conf
@@ -123,7 +123,7 @@ EOF
 
 function create_apache_vh_wiimmfi() {
     # This function will create virtual hosts for Wiimmfi's domains in Apache
-    echo "Creating Wiimmfi virtual hosts...."
+    echo -e "\e[1;33mCreating Wiimmfi virtual hosts...\e[1;0m"
     touch /etc/apache2/sites-available/gamestats2.gs.wiimmfi.de.conf
     touch /etc/apache2/sites-available/gamestats.gs.wiimmfi.de.conf
     touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.wiimmfi.de.conf
@@ -186,11 +186,11 @@ EOF
 }
 
 function apache_mods() {
-    a2enmod $mod1 $mod2
+    a2enmod proxy proxy_http
     service apache2 restart
-    if ! a2enmod $mod3; then
+    if ! a2enmod "php7.4"; then
         a2dismod mpm_event
-        a2enmod $mod3
+        a2enmod "php7.4"
         service apache2 restart
     fi
     service apache2 restart
@@ -199,7 +199,7 @@ function apache_mods() {
 function dns_config() {
     # This function will configure dnsmasq
     printf "\033c"
-    echo "----------Lets configure DNSMASQ now----------"
+    echo -e "\e[1;33m----------Lets configure DNSMASQ now----------\e[1;0m"
     sleep 3s
     # Decided to take this step out, as doing so will create what's known as an open resolver.
     # Having an open resolver is a security risk and is not a good idea.
@@ -265,16 +265,15 @@ function install_required_packages() {
 }
 
 function config_mysql() {
-
     printf "\033c"
-    echo "We will now configure MYSQL server."
+    echo -e "\e[1;33mWe will now configure MYSQL server...\e[1;0m"
     # Config MySQL Password
     debconf-set-selections <<<'mysql-server mysql-server/root_password password passwordhere'
     debconf-set-selections <<<'mysql-server mysql-server/root_password_again password passwordhere'
 
     # Now we will set up our first admin user
     printf "\033c"
-    echo "Now we're going to set up our first Admin Portal user."
+    echo -e "\e[1;33mNow we're going to set up our first Admin Portal user.\e[1;0m"
     read -rp "Please enter the username you wish to use: " firstuser
     read -rp "Please enter a password: " password
     hash=$(/var/www/CoWFC/SQL/bcrypt-hash "$password")
@@ -287,12 +286,17 @@ function config_mysql() {
     read -rp "Please enter a rank number [1-3]: " firstuserrank
     printf "\033c"
     echo "That's all, I'll need for now."
+    echo -e "\e[1;33mWe will now continue to configure MYSQL server...\e[1;0m"
     echo "Setting up the cowfc users database"
-    echo "create database cowfc" | mysql -u root -ppasswordhere
+    echo "create database cowfc" | mysql -u root
     echo "Now importing dumped cowfc database..."
-    mysql -u root -ppasswordhere cowfc </var/www/CoWFC/SQL/cowfc.sql
+    mysql -u root </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-    echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
+    echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root
+    echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY 'passwordhere';" | mysql -u root
+    echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
+    echo "FLUSH PRIVILEGES;" | mysql -u root
+    sed -i -e "s/db_user = 'root'/db_user = 'cowfc'/g" /var/www/html/config.ini
 }
 
 function re() {
@@ -302,7 +306,7 @@ function re() {
 
 function set-server-name() {
     printf "\033c"
-    echo "CoWFC allows you to set your server's name"
+    echo -e "\e[1;33mCoWFC allows you to set your server's name\e[1;0m"
     echo "This is useful if you want to whitelabel your server, and not advertise it as CoWFC"
     read -rp "Please enter the server name, or press ENTER to accept the default [CoWFC]: " servernameconfig
     if [ -z "$servernameconfig" ]; then
@@ -405,7 +409,7 @@ if [ "$CANRUN" == "TRUE" ]; then
         # Let's set up Apache now
         create_apache_vh_nintendo
         create_apache_vh_wiimmfi
-        apache_mods     # Enable reverse proxy mod and PHP 7.1
+        apache_mods     # Enable reverse proxy mod and PHP 7.4
         install_website # Install the web contents for CoWFC
         config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
         re              # Set up reCaptcha
