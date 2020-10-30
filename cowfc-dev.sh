@@ -289,7 +289,7 @@ function config_mysql() {
     echo "Now importing dumped cowfc database..."
     mysql -u root </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-    echo "INSERT INTO users (Username, Password, Rank) VALUES ('$firstuser','$hash','$firstuserrank');" | mysql -u root
+    echo "INSERT INTO users (Username, Password, Rank) VALUES ('$firstuser','$hash','$firstuserrank');" | mysql -u root cowfc
     echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY '$password_db';" | mysql -u root
     echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
     echo "FLUSH PRIVILEGES;" | mysql -u root
@@ -412,9 +412,8 @@ if [ "$CANRUN" == "TRUE" ]; then
         install_website # Install the web contents for CoWFC
         config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
         re              # Set up reCaptcha
-        add-cron        #Makes it so master server can start automatically on boot
+        add-cron        # Makes it so master server can start automatically on boot
         set-server-name # Set your server's name
-        #a fix to fix issue: polaris-/dwc_network_server_emulator#413
         cat >>/etc/apache2/apache2.conf <<EOF
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
 EOF
