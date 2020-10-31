@@ -1,158 +1,154 @@
-#!/bin/bash
-echo "DEBIAN CoWFC SETUP [EXPERIMENTAL]"
-echo "########## !!!!! WARNING !!!!! ##########"
-echo "Recently, Wiimmfi has undergone some changes which makes it so that their servers are more secure from hackers."
-echo "Having said that, this means that the CoWFC fork will not be getting the security patch, as it is unclear how it is possible. For the time being, you accept that you run your own server with a chance that hackers will be able to execute code over the MKW network."
-echo "This might mean that hackers can in theory, brick consoles."
-echo "This script is COMPLETELY experimental ! (Partially tested on Debian 10.3.0)"
-echo "If you have a problem feel free to report it on Github."
-read -rp "Please type ACCEPT to accept the risk: "
-if [ "$REPLY" != "ACCEPT" ] ; then
-	echo "Verification FAILED!"
-	exit 2
-fi
-read -rp "Just in case you were trigger-happy, I'll need you to type ACCEPT.: "
-if [ "$REPLY" != "ACCEPT" ] ; then
-	echo "Verification FAILED!"
-	exit 2
-fi
-# DWC Network Installer script by kyle95wm/beanjr/EnergyCube - re-written for CoWFC
-# Warn Raspberry Pi users - probably a better way of doing this
-if [ -d /home/pi/ ] ; then
-    echo "THIS SCRIPT IS NOT SUPPORTED ON RASPBERRY PI!"
-    echo "Please use the older script here: https://github.com/EnergyCube/dwc_network_installer"
-    exit 1
-fi
-# Check if we already installed the server
-if [ -f /etc/.dwc_installed ] ; then
-echo "You already installed CoWFC. There is no need to re-run it.
-Perhaps some time down the road we can offer an uninstall option.
-You shouldn't have anything else on it anyways."
-echo "If you only want to RESET your dwc server, just delete gpcm.db and storage.db (don't forget to reboot of course)";
-echo "In you want to UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
-nuke your system, re-install everything with this script and restore gpcm.db and storage.db"
-echo "And if you wish to uninstall everything, just nuke your system."
-exit 999
-fi
-# ensure running as root
+# CoWFC Installer
+# By EnergyCube (Based on beanjr script and the re-written script by kyle95wm)
+# Ensure running as root
 if [ "$(id -u)" != "0" ]; then
-  exec sudo "$0" "$@" 
+    exec sudo "$0" "$@"
+fi
+mkdir /var/www
+cd /var/www
+# Check if we already installed the server
+if [ -f /etc/.dwc_installed ]; then
+    printf "\033c"
+    echo "###############################################################"
+    echo -e "##################### \e[0;31m!!!!! WARNING !!!!!\e[0m #####################"
+    echo "  You already installed CoWFC. There is no need to re-run it.  "
+    echo "        Perhaps some time down the road we can offer an        "
+    echo "                       uninstall option.                       "
+    echo " If you only want to RESET your dwc server, just delete gpcm.db"
+    echo "       and storage.db (don't forget to reboot of course)       "
+    echo "  In you want to UPDATE your actual installation, the best way "
+    echo "     is to save gpcm.db and storage.db (in dwc network dir)    "
+    echo "    nuke your system, re-install everything with this script   "
+    echo "               and restore gpcm.db and storage.db              "
+    echo "And if you wish to uninstall everything, just nuke your system."
+    echo "###############################################################"
+    exit 3
 fi
 
-# We'll assume the user is from an English locale
-if [ ! -f /var/www/.locale-done ] ; then
-	if ! apt-get install -y locales ; then
-		locale-gen && dpkg-reconfigure locales
-	fi
+# Warning about security
+printf "\033c"
+echo "###############################################################"
+echo -e "##################### \e[0;31m!!!!! WARNING !!!!!\e[0m #####################"
+echo "   Wiimmfi has undergone some changes which makes it so that   "
+echo "          their servers are more secure from hackers.          "
+echo " Having said that, this means that the CoWFC fork will not be  "
+echo "        getting the security patch, as it is unclear...        "
+echo "  For the time being, you accept that you run your own server  "
+echo " with a chance that hackers will be able to execute code over  "
+echo "                         the network...                        "
+echo "  This might mean that hackers can in theory, brick consoles.  "
+echo "###############################################################"
+
+read -rp "Please type ACCEPT to accept the risk: "
+if [ "$REPLY" != "ACCEPT" ]; then
+    echo "Verification FAILED!"
+    exit 2
 fi
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
 
-# We'll create our secret locale file
-touch /var/www/.locale-done
-
-# Variables used by the script in various sections to pre-fill long commandds
-C1="0" # A counting variable
-C2="0" # A counting variable
-IP="" # Used for user input
-interface="" # Used for user input
-mod1="proxy" # This is a proxy mod that is dependent on the other 2
-mod2="proxy_http" # This is related to mod1
-mod3="php7.3"
-UPDATE_FILE="$0.tmp"
-UPDATE_BASE="https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc-debian.sh"
-
-function update {
-# The following lines will check for an update to this script if the -s switch
-# is not used.
-
-# Original code by Dennis Simpson
-# Modified by Kyle Warwick-Mathieu
-echo "Checking if script is up to date, please wait"
-wget -nv -O "$UPDATE_FILE" "$UPDATE_BASE" >& /dev/null
-if ! diff "$0" "$UPDATE_FILE" >& /dev/null && [ -s "$UPDATE_FILE" ]; then
-	mv "$UPDATE_FILE" "$0"
-	chmod +x "$0"
-	echo "$0 updated"
-	"$0" -s
-	exit
+# We will test internet connectivity using ping
+if ping -c 2 github.com >/dev/nul; then
+    echo "Internet is OK"
 else
-	rm "$UPDATE_FILE" # If no updates are available, simply remove the file
-	fi
+    echo "Internet Connection Test Failed!"
+    echo "If you want to bypass internet check use -s arg!"
+    exit 4
+fi
+
+function create_apache_vh_nintendo() {
+    printf "\033c"
+    echo -e "\e[1;33mCreating Nintendo virtual hosts...\e[1;0m"
+    read -p "Please enter your Fully Qualified Domain Name you wish to use: " domain
+    if [ -z $domain ]; then
+        echo "ERROR - INVALID ENTRY!"
+        exit 1
+    fi
+
+    # This function will create virtual hosts for Nintendo's domains in Apache
+    echo "Your domain $domain"
+    echo "Will replace nintendowifi.net"
+    echo "For example: gamestats2.gs.$domain"
+    read -p "Is this correct? [y/n] " confirm
+
+    if [ $confirm == "y" ]; then
+        echo "Great! Sit back and relax..."
+    else
+        create_apache_vh_nintendo
+    fi
+
+    echo "Creating custom virtual hosts...."
+    touch /etc/apache2/sites-available/gamestats2.gs.$domain.conf
+    touch /etc/apache2/sites-available/gamestats.gs.$domain.conf
+    touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.$domain.conf
+    touch /etc/apache2/sites-available/sake.gs.$domain.conf
+    cat >/etc/apache2/sites-available/gamestats2.gs.$domain.conf <<EOF
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        ServerName gamestats2.gs.$domain
+        ServerAlias "gamestats2.gs.$domain, gamestats2.gs.$domain"
+ 
+        ProxyPreserveHost On
+ 
+        ProxyPass / http://127.0.0.1:9002/
+        ProxyPassReverse / http://127.0.0.1:9002/
+</VirtualHost>
+EOF
+
+    cat >/etc/apache2/sites-available/gamestats.gs.$domain.conf <<EOF
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        ServerName gamestats.gs.$domain
+        ServerAlias "gamestats.gs.$domain, gamestats.gs.$domain"
+        ProxyPreserveHost On
+        ProxyPass / http://127.0.0.1:9002/
+        ProxyPassReverse / http://127.0.0.1:9002/
+</VirtualHost>
+EOF
+
+    cat >/etc/apache2/sites-available/nas-naswii-dls1-conntest.$domain.conf <<EOF
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        ServerName naswii.$domain
+        ServerAlias "naswii.$domain, naswii.$domain"
+        ServerAlias "nas.$domain"
+        ServerAlias "nas.$domain, nas.$domain"
+        ServerAlias "dls1.$domain"
+        ServerAlias "dls1.$domain, dls1.$domain"
+        ServerAlias "conntest.$domain"
+        ServerAlias "conntest.$domain, conntest.$domain"
+        ProxyPreserveHost On
+        ProxyPass / http://127.0.0.1:9000/
+        ProxyPassReverse / http://127.0.0.1:9000/
+</VirtualHost>
+EOF
+
+    cat >/etc/apache2/sites-available/sake.gs.$domain.conf <<EOF
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        ServerName sake.gs.$domain
+        ServerAlias sake.gs.$domain *.sake.gs.$domain
+        ServerAlias secure.sake.gs.$domain
+        ServerAlias secure.sake.gs.$domain *.secure.sake.gs.$domain
+ 
+        ProxyPass / http://127.0.0.1:8000/
+ 
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+
+    echo "Done!"
+    echo "Enabling..."
+    a2ensite *.$domain.conf
+    apachectl graceful
 }
 
-function create_apache_vh_nintendo {
-# This function will create virtual hosts for Nintendo's domains in Apache
-echo "Creating Nintendo virtual hosts...."
-touch /etc/apache2/sites-available/gamestats2.gs.nintendowifi.net.conf
-touch /etc/apache2/sites-available/gamestats.gs.nintendowifi.net.conf
-touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.nintendowifi.net.conf
-touch /etc/apache2/sites-available/sake.gs.nintendowifi.net.conf
-cat >/etc/apache2/sites-available/gamestats2.gs.nintendowifi.net.conf <<EOF
-<VirtualHost *:80>
-ServerAdmin webmaster@localhost
-ServerName gamestats2.gs.nintendowifi.net
-ServerAlias "gamestats2.gs.nintendowifi.net, gamestats2.gs.nintendowifi.net"
-ProxyPreserveHost On
-ProxyPass / http://127.0.0.1:9002/
-ProxyPassReverse / http://127.0.0.1:9002/
-</VirtualHost>
-EOF
-
-cat >/etc/apache2/sites-available/gamestats.gs.nintendowifi.net.conf <<EOF
-<VirtualHost *:80>
-ServerAdmin webmaster@localhost
-ServerName gamestats.gs.nintendowifi.net
-ServerAlias "gamestats.gs.nintendowifi.net, gamestats.gs.nintendowifi.net"
-ProxyPreserveHost On
-ProxyPass / http://127.0.0.1:9002/
-ProxyPassReverse / http://127.0.0.1:9002/
-</VirtualHost>
-EOF
-
-cat >/etc/apache2/sites-available/nas-naswii-dls1-conntest.nintendowifi.net.conf <<EOF
-<VirtualHost *:80>
-ServerAdmin webmaster@localhost
-ServerName naswii.nintendowifi.net
-ServerAlias "naswii.nintendowifi.net, naswii.nintendowifi.net"
-ServerAlias "nas.nintendowifi.net"
-ServerAlias "nas.nintendowifi.net, nas.nintendowifi.net"
-ServerAlias "dls1.nintendowifi.net"
-ServerAlias "dls1.nintendowifi.net, dls1.nintendowifi.net"
-ServerAlias "conntest.nintendowifi.net"
-ServerAlias "conntest.nintendowifi.net, conntest.nintendowifi.net"
-ProxyPreserveHost On
-ProxyPass / http://127.0.0.1:9000/
-ProxyPassReverse / http://127.0.0.1:9000/
-</VirtualHost>
-EOF
-
-cat >/etc/apache2/sites-available/sake.gs.nintendowifi.net.conf <<EOF
-<VirtualHost *:80>
-ServerAdmin webmaster@localhost
-ServerName sake.gs.nintendowifi.net
-ServerAlias sake.gs.nintendowifi.net *.sake.gs.nintendowifi.net
-ServerAlias secure.sake.gs.nintendowifi.net
-ServerAlias secure.sake.gs.nintendowifi.net *.secure.sake.gs.nintendowifi.net
-ProxyPass / http://127.0.0.1:8000/
-CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>
-EOF
-
-echo "Done!"
-echo "enabling...."
-a2ensite *.nintendowifi.net.conf
-service apache2 restart
-}
-
-function create_apache_vh_wiimmfi {
-# This function will create virtual hosts for Wiimmfi's domains in Apache
-echo "Creating Wiimmfi virtual hosts...."
-touch /etc/apache2/sites-available/gamestats2.gs.wiimmfi.de.conf
-touch /etc/apache2/sites-available/gamestats.gs.wiimmfi.de.conf
-touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.wiimmfi.de.conf
-touch /etc/apache2/sites-available/sake.gs.wiimmfi.de.conf
-cat >/etc/apache2/sites-available/gamestats2.gs.wiimmfi.de.conf <<EOF
+function create_apache_vh_wiimmfi() {
+    # This function will create virtual hosts for Wiimmfi's domains in Apache
+    echo -e "\e[1;33mCreating Wiimmfi virtual hosts...\e[1;0m"
+    touch /etc/apache2/sites-available/gamestats2.gs.wiimmfi.de.conf
+    touch /etc/apache2/sites-available/gamestats.gs.wiimmfi.de.conf
+    touch /etc/apache2/sites-available/nas-naswii-dls1-conntest.wiimmfi.de.conf
+    touch /etc/apache2/sites-available/sake.gs.wiimmfi.de.conf
+    cat >/etc/apache2/sites-available/gamestats2.gs.wiimmfi.de.conf <<EOF
 <VirtualHost *:80>
 ServerAdmin webmaster@localhost
 ServerName gamestats2.gs.wiimmfi.de
@@ -163,7 +159,7 @@ ProxyPassReverse / http://127.0.0.1:9002/
 </VirtualHost>
 EOF
 
-cat >/etc/apache2/sites-available/gamestats.gs.wiimmfi.de.conf <<EOF
+    cat >/etc/apache2/sites-available/gamestats.gs.wiimmfi.de.conf <<EOF
 <VirtualHost *:80>
 ServerAdmin webmaster@localhost
 ServerName gamestats.gs.wiimmfi.de
@@ -174,7 +170,7 @@ ProxyPassReverse / http://127.0.0.1:9002/
 </VirtualHost>
 EOF
 
-cat >/etc/apache2/sites-available/nas-naswii-dls1-conntest.wiimmfi.de.conf <<EOF
+    cat >/etc/apache2/sites-available/nas-naswii-dls1-conntest.wiimmfi.de.conf <<EOF
 <VirtualHost *:80>
 ServerAdmin webmaster@localhost
 ServerName naswii.wiimmfi.de
@@ -191,7 +187,7 @@ ProxyPassReverse / http://127.0.0.1:9000/
 </VirtualHost>
 EOF
 
-cat >/etc/apache2/sites-available/sake.gs.wiimmfi.de.conf <<EOF
+    cat >/etc/apache2/sites-available/sake.gs.wiimmfi.de.conf <<EOF
 <VirtualHost *:80>
 ServerAdmin webmaster@localhost
 ServerName sake.gs.wiimmfi.de
@@ -203,157 +199,153 @@ CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 EOF
 
-echo "Done!"
-echo "enabling...."
-a2ensite *.wiimmfi.de.conf
-service apache2 restart
-}
-function apache_mods {
-a2enmod $mod1 $mod2
-service apache2 restart
-if ! a2enmod $mod3 ; then
-a2dismod mpm_event
-a2enmod $mod3
-service apache2 restart
-fi
-service apache2 restart
+    echo "Done!"
+    echo "Enabling...."
+    a2ensite *.wiimmfi.de.conf
+    service apache2 restart
 }
 
-function dns_config {
-# This function will configure dnsmasq
-echo "----------Lets configure DNSMASQ now----------"
-sleep 3s
-# Decided to take this step out, as doing so will create what's known as an open resolver.
-# Having an open resolver is a security risk and is not a good idea.
-# This means that DNS will be restricted to ONLY looking up Nintendo domains.
-#echo "Adding Google DNS (8.8.8.8) to config"
-# We add Google's DNS server to our server so that anyone with our DNS server can still resolve hostnames to IP
-# addresses outside our DNS server. Useful for Dolphin testing
-#cat >>/etc/dnsmasq.conf <<EOF
-#server=8.8.8.8
-#EOF
-#sleep 2s
-echo "What is your EXTERNAL IP?"
-echo "NOTE: If you plan on using this on a LAN, put the IP of your Linux system instead"
-echo "It's also best practice to make this address static in your /etc/network/interfaces file"
-echo "Your LAN IP is"
-hostname  -I | cut -f1 -d' '
-echo "Your external IP is:"
-curl -4 -s icanhazip.com
-echo "Please type in either your LAN or external IP"
-read -re IP
-cat >>/etc/dnsmasq.conf <<EOF # Adds your IP you provide to the end of the DNSMASQ config file
+function apache_mods() {
+    a2enmod proxy proxy_http
+    service apache2 restart
+    if ! a2enmod "php7.4"; then
+        a2dismod mpm_event
+        a2enmod "php7.4"
+        service apache2 restart
+    fi
+    service apache2 restart
+}
+
+function dns_config() {
+    # This function will configure dnsmasq
+    printf "\033c"
+    echo -e "\e[1;33m----------Lets configure DNSMASQ now----------\e[1;0m"
+    sleep 3s
+    # Decided to take this step out, as doing so will create what's known as an open resolver.
+    # Having an open resolver is a security risk and is not a good idea.
+    # This means that DNS will be restricted to ONLY looking up Nintendo domains.
+    #echo "Adding Google DNS (8.8.8.8) to config"
+    # We add Google's DNS server to our server so that anyone with our DNS server can still resolve hostnames to IP
+    # addresses outside our DNS server. Useful for Dolphin testing
+    #cat >>/etc/dnsmasq.conf <<EOF
+    #server=8.8.8.8
+    #EOF
+    #sleep 2s
+    echo "What is your EXTERNAL IP?"
+    echo "NOTE: If you plan on using this on a LAN, put the IP of your Linux system instead"
+    echo "It's also best practice to make this address static in your /etc/network/interfaces file"
+    echo "Your LAN IP is"
+    hostname -I | cut -f1 -d' '
+    echo "Your external IP is:"
+    curl -4 -s icanhazip.com
+    echo "Please type in either your LAN or external IP"
+    read -re IP
+    cat >>/etc/dnsmasq.conf <<EOF # Adds your IP you provide to the end of the DNSMASQ config file
 address=/nintendowifi.net/$IP
 address=/wiimmfi.de/$IP
 EOF
-clear
-ifconfig
-read -rp "Please type your primary interfaces's name (e.g - eth0): " interface
-cat >>/etc/dnsmasq.conf <<EOF
+    clear
+    ifconfig
+    read -rp "Please type your primary interfaces's name (e.g - eth0): " interface
+    cat >>/etc/dnsmasq.conf <<EOF
 interface="$interface"
 EOF
-clear
-echo "DNSMasq setup completed!"
-clear
-service dnsmasq restart
-clear
+    clear
+    echo "DNSMasq setup completed!"
+    clear
+    service dnsmasq restart
+    clear
 }
 
-function install_required_packages {
-# Fix dpkg problems that happened somehow
-dpkg --configure -a
-echo "Updating & installing PHP 7.3 onto your system..."
-apt-get update
-apt-get install --force-yes php7.3 -y
-echo "Installing required packages..."
-# Install the other required packages
-apt-get install --force-yes apache2 python2.7 python-twisted dnsmasq git curl net-tools -y
+function install_required_packages() {
+    printf "\033c"
+    echo -e "\e[1;33mInstalling required packages...\e[1;0m"
+
+    # Install Minimal Requirements
+    apt install -y curl git net-tools dnsmasq apache2 software-properties-common
+
+    # Install Python
+    apt install -y python3-software-properties python2.7 python-twisted
+
+    # Add php7.4 repo
+    apt -y install lsb-release apt-transport-https ca-certificates
+    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
+    # Refresh
+    apt update
+    # Install php7.4
+    apt -y install php7.4
+
+    # Install MySQL (MariaDB)
+    apt update
+    apt -y install mariadb-server
+    apt -y install php7.4-mysql
+    apt -y install sqlite php7.4-sqlite3
+    # apt-get -y install mysql-server
 }
-function config_mysql {
-echo "We will now configure MYSQL server."
 
-# dpkg require gnupg
-apt install -y gnupg
+function config_mysql() {
+    printf "\033c"
+    echo -e "\e[1;33mWe will now configure MySQL...\e[1;0m"
+    # Config MySQL Password
+    debconf-set-selections <<<'mysql-server mysql-server/root_password password passwordhere'
+    debconf-set-selections <<<'mysql-server mysql-server/root_password_again password passwordhere'
 
-wget https://dev.mysql.com/get/mysql-apt-config_0.8.15-1_all.deb
-dpkg -i "mysql-apt-config_0.8.15-1_all.deb"
-rm mysql-apt-config_0.8.15-1_all.deb
-apt update
-# Auto Install mysql (Not working because the user need to select legacy password (idk why but it's not working if we don't do that))
-# Admin Dashboard return : There was an error: SQLSTATE[HY000] [1698] Access denied for user 'root'@'localhost'
-#export DEBIAN_FRONTEND="noninteractive"
-echo "mysql-server mysql-server/root_password password passwordhere" | sudo debconf-set-selections
-echo "mysql-server mysql-server/root_password_again password passwordhere" | sudo debconf-set-selections
-apt install -y -q mysql-server
-
-# We will now set the new mysql password in the AdminPage.php file.
-# Do not change "passwordhere", as this will be the base for replacing it later
-# The below sed command has NOT been tested so we don't know if this will work or not.
-#sed -i -e 's/passwordhere/passwordhere/g' /var/www/html/_site/AdminPage.php
-# Next we will install two more packages to make mysql and sqlite work with PHP
-apt-get install --force-yes php7.3-mysql -y
-apt-get install --force-yes sqlite php7.3-sqlite3 -y
-# Now we will set up our first admin user
-echo "Now we're going to set up our first Admin Portal user."
-read -rp "Please enter the username you wish to use: " firstuser
-read -rp "Please enter a password: " password
-hash=$(/var/www/CoWFC/SQL/bcrypt-hash "$password")
-echo "We will now set the rank for $firstuser"
-echo "At the moment, this does nothing. However in later releases, we plan to restrict who can do what."
-echo "1: First Rank"
-echo "2: Second Rank"
-echo "3: Third Rank"
-read -rp "Please enter a rank number [1-3]: " firstuserrank
-echo "That's all the information I'll need for now."
-echo "Setting up the cowfc users database"
-echo "create database cowfc" | mysql -u root -ppasswordhere
-echo "Now importing dumped cowfc database..."
-mysql -u root -ppasswordhere cowfc < /var/www/CoWFC/SQL/cowfc.sql
-echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc | mysql -u root -ppasswordhere cowfc
+    # Now we will set up our first admin user
+    sleep 2s
+    printf "\033c"
+    echo -e "\e[1;33mNow we're going to set up our first Admin Portal user.\e[1;0m"
+    read -rp "Please enter the username you wish to use: " firstuser
+    read -rp "Please enter a password: " password
+    hash=$(/var/www/CoWFC/SQL/bcrypt-hash "$password")
+    echo "We will now set the rank for $firstuser"
+    echo "At the moment, this does nothing. However in later releases, we plan to restrict who can do what."
+    echo "1: First Rank"
+    echo "2: Second Rank"
+    echo "3: Third Rank"
+    read -rp "Please enter a rank number [1-3]: " firstuserrank
+    echo -e "\e[1;33mFinnaly, we need a password for the mysql user 'cowfc'.\e[1;0m"
+    read -rp "Please enter a password for cowfc user (MySQL): " password_db
+    echo "That's all, I'll need for now."
+    echo -e "\e[1;33mWe will now continue to configure MYSQL server...\e[1;0m"
+    echo "Setting up the cowfc users database"
+    echo "Create database cowfc" | mysql -u root
+    echo "Now importing dumped cowfc database..."
+    mysql -u root cowfc </var/www/CoWFC/SQL/cowfc.sql
+    echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
+    echo "INSERT INTO users (Username, Password, Rank) VALUES ('$firstuser','$hash','$firstuserrank');" | mysql -u root cowfc
+    echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY '$password_db';" | mysql -u root
+    echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
+    echo "FLUSH PRIVILEGES;" | mysql -u root
+    sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
+    sed -i -e "s/db_user = root/db_user = cowfc/g" /var/www/html/config.ini
+    sed -i -e "s/db_pass = passwordhere/db_pass = $password_db/g" /var/www/html/config.ini
 }
-function re {
-echo "For added security, we recommend setting up Google's reCaptcha.
 
-However, not many people would care about this, so we're making it optional.
+function re() {
+    # Google ReCaptcha Disabled
+    sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/html/config.ini
+}
 
-Feel free to press the ENTER key at the prompt, to skip reCaptcha setup, or 'y' to proceed with recaptcha setup."
-read -rp "Would you like to set up reCaptcha on this server? [y/N]: " recaptchacontinue
-if [ "$recaptchacontinue" == y ] ; then
-echo "In order to log into your Admin interface, you will need to set up reCaptcha keys. This script will walk you through it"
-echo "Please make an account over at https://www.google.com/recaptcha/"
-# Next we will ask the user for their secret key and site keys
-read -rp "Please enter the SECRET KEY you got from setting up reCaptcha: " secretkey
-read -rp "Please enter the SITE KEY you got from setting up reCaptcha: " sitekey
-echo "Thank you! I will now add your SECRET KEY and SITE KEY to /var/www/html/_admin/Auth/Login.php"
-echo "If your reCaptcha don't work, you can disable it in the config.ini => recaptcha_enabled = 0"
-# Replace SECRET_KEY_HERE with the secret key from our $secretkey variable
-#sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/_admin/Auth/Login.php
-sed -i -e "s/SECRET_KEY_HERE/$secretkey/g" /var/www/html/config.ini
-# Replace SITE_KEY_HERE with the site key from our $sitekey variable
-#sed -i -e "s/SITE_KEY_HERE/$sitekey/g" /var/www/html/_admin/Auth/Login.php
-sed -i -e "s/recaptcha_site = SITE_KEY_HERE/recaptcha_site = $sitekey/g" /var/www/html/config.ini
-else
-sed -i -e "s/recaptcha_enabled = 1/recaptcha_enabled = 0/g" /var/www/html/config.ini
-fi
+function set-server-name() {
+    printf "\033c"
+    echo -e "\e[1;33mCoWFC allows you to set your server's name\e[1;0m"
+    echo "This is useful if you want to whitelabel your server, and not advertise it as CoWFC"
+    read -rp "Please enter the server name, or press ENTER to accept the default [CoWFC]: " servernameconfig
+    if [ -z "$servernameconfig" ]; then
+        echo "Using CoWFC as the server name."
+    else
+        echo "Setting server name to $servernameconfig"
+        sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
+    fi
 }
-function set-server-name {
-echo "This recent CoWFC update allows you to set your server's name"
-echo "This is useful if you want to whitelabel your server, and not advertise it as CoWFC"
-read -rp "Please enter the server name, or press ENTER to accept the default [CoWFC]: " servernameconfig
-if [ -z "$servernameconfig" ] ; then
-echo "Using CoWFC as the server name."
-else
-echo "Setting server name to $servernameconfig"
-sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
-fi
-}
-function add-cron {
-echo "Checking if there is a cron available for $USER"
-if ! crontab -l -u "$USER" |grep "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1" ; then
-echo "No cron job is currently installed"
-echo "Working the magic. Hang tight!"
-cat > /start-altwfc.sh <<EOF
+
+function add-cron() {
+    echo "Checking if there is a cron available for $USER"
+    if ! crontab -l -u "$USER" | grep "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1"; then
+        echo "No cron job is currently installed"
+        echo "Working the magic. Hang tight!"
+        cat >/start-altwfc.sh <<EOF
 #!/bin/sh
 cd /
 chmod 777 /var/www/dwc_network_server_emulator -R
@@ -361,122 +353,113 @@ cd var/www/dwc_network_server_emulator
 python master_server.py
 cd /
 EOF
-chmod 777 /start-altwfc.sh
-mkdir -p /cron-logs
-if ! command -v crontab ; then
-apt-get install cron -y
-fi
-echo "Creating the cron job now!"
-echo "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1" >/tmp/alt-cron
-crontab -u "$USER" /tmp/alt-cron
-echo "Done!"
-fi
-}
-function install_website {
-# First we will delete evertyhing inside of /var/www/html
-rm -rf /var/www/html/*
-# Let's download the HTML5 template SBAdmin so that the Admin GUI looks nice
-# Download the stuff
-#wget https://github.com/BlackrockDigital/startbootstrap-sb-admin/archive/gh-pages.zip -O sb-admin.zip
-#unzip sb-admin.zip
-#if [ $? != "0" ] ; then
-#	apt-get --force-yes install unzip -y
-#	unzip sb-admin.zip
-#fi
-# Copy required directories and files to /var/www/html
-#cp /var/www/startbootstrap-sb-admin-gh-pages/css/ /var/www/html/ -R && cp /var/www/startbootstrap-sb-admin-gh-pages/js /var/www/html/ -R && cp /var/www/startbootstrap-sb-admin-gh-pages/scss/ /var/www/html/ -R && cp /var/www/startbootstrap-sb-admin-gh-pages/vendor/ /var/www/html/ -R
-
-# We'll download and install the main template next
-
-#wget https://html5up.net/landed/download -O html5up-landed.zip
-#unzip html5up-landed.zip -d landed
-
-# We could put varous cp commands here to copy the needed files
-# Then we will copy the website files from our CoWFC Git
-mkdir /var/www/html
-cp /var/www/CoWFC/Web/* /var/www/html -R
-chmod 777 /var/www/html/bans.log
-# Let's restart Apache now
-service apache2 restart
-echo "Creating gpcm.db file"
-touch /var/www/dwc_network_server_emulator/gpcm.db
-chmod 777 /var/www/dwc_network_server_emulator/ -R
+        chmod 777 /start-altwfc.sh
+        mkdir -p /cron-logs
+        if ! command -v crontab; then
+            apt-get install cron -y
+        fi
+        echo "Creating the cron job now!"
+        echo "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1" >/tmp/alt-cron
+        crontab -u "$USER" /tmp/alt-cron
+        echo "Done!"
+    fi
 }
 
-# MAIN
-if [ "$1" != "-s" ]; then # If there is no -s argument then run the updater
-	update # This will call our update function
-fi
+function install_website() {
+    rm -rf /var/www/html/*
+    mkdir /var/www/html
+    cp /var/www/CoWFC/Web/* /var/www/html -R
+    chmod 777 /var/www/html/bans.log
+    # Let's restart Apache now
+    service apache2 restart
+    echo "Creating gpcm.db file"
+    touch /var/www/dwc_network_server_emulator/gpcm.db
+    chmod 777 /var/www/dwc_network_server_emulator/ -R
+}
 
-echo "Skipping OS & OS Version check..."
-# Our bypass OS check since it's experimental
-CANRUN=TRUE
+CANRUN="TRUE"
+# If there is no -s argument then run the updater
+# This will call our update function
+# if [ "$1" != "-s" ]; then
+#     update
+# fi
+
+# if [ -f /etc/lsb-release ]; then
+#     if grep -q "14.04" /etc/lsb-release || grep -q "16.04" /etc/lsb-release || grep -q "20.04" /etc/lsb-release; then
+#         CANRUN="TRUE"
+#     elif [ -f /var/www/.aws_install ]; then
+#         CANRUN="TRUE"
+#     else
+#         echo "It looks like you are not running on a supported OS."
+#         echo "Please open an issue and request support for this platform."
+#         echo "Actually Ubuntu 14.04, 16.04 and 20.04 are supported."
+#     fi
+# fi
+
 # Determine if our script can run
-if [ "$CANRUN" == "TRUE" ] ; then
-    # Put commands or functions on these lines to continue with script execution.
-    # The first thing we will do is to update our package repos but let's also make sure that the user is running the script in the proper directory /var/www
-    if [ "$PWD" == "/var/www" ] ; then
+if [ "$CANRUN" == "TRUE" ]; then
+    if [ "$PWD" == "/var/www" ]; then
         apt-get update
         # Let's install required packages first.
         install_required_packages
         # Then we will check to see if the Gits for CoWFC and dwc_network_server_emulator exist
-        if [ ! -d "/var/www/CoWFC" ] ; then
+        if [ ! -d "/var/www/CoWFC" ]; then
             echo "Git for CoWFC does not exist in /var/www/"
-	    while ! git clone https://github.com/EnergyCube/CoWFC.git && [ "$C1" -le "4" ] ; do
-	    	echo "GIT CLONE FAILED! Retrying....."
-            (( C1=C1+1 ))
-	    done
-if [ "$C1" == "5" ] ; then
-    echo "Giving up"
-    exit 1
-fi
-        fi
-        if [ ! -d "/var/www/dwc_network_server_emulator" ] ; then
-            echo "Git for dwc_network_server_emulator does not exist in /var/www"
-            while ! git clone https://github.com/EnergyCube/dwc_network_server_emulator.git && [ "$C2" -le "4" ] ; do
-            	echo "GIT CLONE FAILED! Retrying......"
-                (( C2=C2+1 ))
+            while ! git clone https://github.com/EnergyCube/CoWFC.git && [ "$C1" -le "4" ]; do
+                echo "GIT CLONE FAILED! Retrying....."
+                ((C1 = C1 + 1))
             done
-if [ "$C2" == "5" ] ; then
-    echo "Giving up"
-    exit 1
-fi
+            if [ "$C1" == "5" ]; then
+                echo "Giving up"
+                exit 1
+            fi
+        fi
+        if [ ! -d "/var/www/dwc_network_server_emulator" ]; then
+            echo "Git for dwc_network_server_emulator does not exist in /var/www"
+            while ! git clone https://github.com/EnergyCube/dwc_network_server_emulator.git && [ "$C2" -le "4" ]; do
+                echo "GIT CLONE FAILED! Retrying......"
+                ((C2 = C2 + 1))
+            done
+            if [ "$C2" == "5" ]; then
+                echo "Giving up"
+                exit 1
+            fi
             echo "Setting proper file permissions"
             chmod 777 /var/www/dwc_network_server_emulator/ -R
         fi
-# Configure DNSMASQ
-dns_config
-# Let's set up Apache now
-create_apache_vh_nintendo
-create_apache_vh_wiimmfi
-apache_mods # Enable reverse proxy mod and PHP 7.1
-install_website # Install the web contents for CoWFC
-config_mysql # We will set up the mysql password as "passwordhere" and create our first user
-re # Set up reCaptcha
-add-cron #Makes it so master server can start automatically on boot
-set-server-name # Set your server's name
-#a fix to fix issue: polaris-/dwc_network_server_emulator#413
-cat >>/etc/apache2/apache2.conf <<EOF
+        # Configure DNSMASQ
+        dns_config
+        # Let's set up Apache now
+        create_apache_vh_nintendo
+        #create_apache_vh_wiimmfi
+        apache_mods     # Enable reverse proxy mod and PHP 7.4
+        install_website # Install the web contents for CoWFC
+        config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
+        re              # Set up reCaptcha
+        add-cron        # Makes it so master server can start automatically on boot
+        set-server-name # Set your server's name
+        cat >>/etc/apache2/apache2.conf <<EOF
 HttpProtocolOptions Unsafe LenientMethods Allow0.9
 EOF
-echo "Moving the configuration file for more security..."
-mv /var/www/html/config.ini /var/www/config.ini
-echo "Done!"
-# Let's make our hidden file so that our script will know that we've already installed the server
-# This will prevent accidental re-runs
-echo "Finishing..."
-touch /etc/.dwc_installed
-echo "Thank you for installing CoWFC."
-echo "If you wish to access the admin GUI, please go to http://$IP/?page=admin&section=Dashboard"
-read -rp "Please hit the ENTER key to reboot now, or press ctrl+c and reboot whenever it is convenient for you: [ENTER] " rebootenterkey
-if [ -z "$rebootenterkey" ] ; then
-reboot
-fi
-reboot
-exit 0
-# DO NOT PUT COMMANDS UNDER THIS FI
-fi
+        echo "Moving the configuration file for more security..."
+        mv /var/www/html/config.ini /var/www/config.ini
+        echo "Done!"
+        # Let's make our hidden file so that our script will know that we've already installed the server
+        # This will prevent accidental re-runs
+        echo "Finishing..."
+        touch /etc/.dwc_installed
+        echo "Thank you for installing CoWFC."
+        echo "If you wish to access the admin GUI, please go to http://$IP/?page=admin&section=Dashboard"
+        read -rp "Please hit the ENTER key to reboot now, or press ctrl+c and reboot whenever it is convenient for you: [ENTER] " rebootenterkey
+        if [ -z "$rebootenterkey" ]; then
+            reboot
+        fi
+        reboot
+        exit 0
+    # DO NOT PUT COMMANDS UNDER THIS FI
+    fi
 else
-    echo "Sorry, you do not appear to be able to run this script."
+    echo "Sorry, you do not appear to be running a supported Opperating System."
+    echo "Please make sure you are running Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 20.04, and try again!"
     exit 1
 fi
