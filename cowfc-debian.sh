@@ -46,12 +46,16 @@ if [ "$REPLY" != "ACCEPT" ]; then
 fi
 
 # We will test internet connectivity using ping
-if ping -c 2 github.com >/dev/nul; then
-    echo "Internet is OK"
+if [ "$1" != "-s" ]; then
+    if ping -c 2 github.com >/dev/nul; then
+        echo "Internet is OK"
+    else
+        echo "Internet Connection Test Failed!"
+        echo "If you want to bypass internet check use -s arg!"
+        exit 4
+    fi
 else
-    echo "Internet Connection Test Failed!"
-    echo "If you want to bypass internet check use -s arg!"
-    exit 4
+    echo "Internet check skipped..."
 fi
 
 function create_apache_vh_nintendo() {
@@ -59,8 +63,7 @@ function create_apache_vh_nintendo() {
     echo -e "\e[1;33mCreating Nintendo virtual hosts...\e[1;0m"
     read -p "Please enter your Fully Qualified Domain Name you wish to use: " domain
     if [ -z $domain ]; then
-        echo "ERROR - INVALID ENTRY!"
-        exit 1
+        create_apache_vh_nintendo
     fi
 
     # This function will create virtual hosts for Nintendo's domains in Apache
@@ -137,6 +140,7 @@ EOF
 
     echo "Done!"
     echo "Enabling..."
+    apache_mods
     a2ensite *.$domain.conf
     apachectl graceful
 }
@@ -281,7 +285,7 @@ function install_required_packages() {
     apt -y install mariadb-server
     apt -y install php7.4-mysql
     apt -y install sqlite php7.4-sqlite3
-    # apt-get -y install mysql-server
+    # apt -y install mysql-server
 }
 
 function config_mysql() {
@@ -317,9 +321,9 @@ function config_mysql() {
     echo "CREATE USER 'cowfc'@'localhost' IDENTIFIED BY '$password_db';" | mysql -u root
     echo "GRANT ALL PRIVILEGES ON *.* TO 'cowfc'@'localhost';" | mysql -u root
     echo "FLUSH PRIVILEGES;" | mysql -u root
-    sed -i -e "s/name = 'CoWFC'/name = '$servernameconfig'/g" /var/www/html/config.ini
     sed -i -e "s/db_user = root/db_user = cowfc/g" /var/www/html/config.ini
     sed -i -e "s/db_pass = passwordhere/db_pass = $password_db/g" /var/www/html/config.ini
+    sleep 1s
 }
 
 function re() {
@@ -356,7 +360,7 @@ EOF
         chmod 777 /start-altwfc.sh
         mkdir -p /cron-logs
         if ! command -v crontab; then
-            apt-get install cron -y
+            apt install cron -y
         fi
         echo "Creating the cron job now!"
         echo "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1" >/tmp/alt-cron
@@ -377,29 +381,56 @@ function install_website() {
     chmod 777 /var/www/dwc_network_server_emulator/ -R
 }
 
-CANRUN="TRUE"
+function update() {
+    # Original code by Dennis Simpson
+    # Modified by Kyle Warwick-Mathieu
+    wget -nv -O "$UPDATE_FILE" "$UPDATE_BASE" >&/dev/null
+    if cmp "$0" "$UPDATE_FILE" && [ -s "$UPDATE_FILE" ]; then
+        echo "Script is not up to date, please wait..."
+        sleep 1s
+        mv "$UPDATE_FILE" "$0"
+        chmod +x "$0"
+        echo "[UPDATED] $0"
+        sleep 1s
+        "$0"
+        exit 10
+    else
+        rm "$UPDATE_FILE"
+        echo "Script is up to date !"
+    fi
+}
+
 # If there is no -s argument then run the updater
 # This will call our update function
-# if [ "$1" != "-s" ]; then
-#     update
-# fi
+if [ "$1" != "-s" ]; then
+    UPDATE_FILE="$0.tmp"
+    UPDATE_BASE="https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc-debian.sh"
+    update
+else
+    echo "Update check skipped..."
+fi
 
-# if [ -f /etc/lsb-release ]; then
-#     if grep -q "14.04" /etc/lsb-release || grep -q "16.04" /etc/lsb-release || grep -q "20.04" /etc/lsb-release; then
-#         CANRUN="TRUE"
-#     elif [ -f /var/www/.aws_install ]; then
-#         CANRUN="TRUE"
-#     else
-#         echo "It looks like you are not running on a supported OS."
-#         echo "Please open an issue and request support for this platform."
-#         echo "Actually Ubuntu 14.04, 16.04 and 20.04 are supported."
-#     fi
-# fi
+# Check if the script can be run
+if [ -f /etc/os-release ]; then
+    if grep -q "Debian" /etc/os-release; then
+        CANRUN="TRUE"
+    else
+        CANRUN="FALSE"
+    fi
+elif [ -f /etc/lsb-release ]; then
+    if grep -q "Ubuntu" /etc/lsb-release; then
+        echo "You are running Ubuntu, you can download the Ubuntu CoWFC install script on Github."
+        echo "Please check : https://github.com/EnergyCube/cowfc_installer"
+    fi
+    CANRUN="FALSE"
+else
+    CANRUN="FALSE"
+fi
 
 # Determine if our script can run
 if [ "$CANRUN" == "TRUE" ]; then
     if [ "$PWD" == "/var/www" ]; then
-        apt-get update
+        apt update
         # Let's install required packages first.
         install_required_packages
         # Then we will check to see if the Gits for CoWFC and dwc_network_server_emulator exist
@@ -432,10 +463,10 @@ if [ "$CANRUN" == "TRUE" ]; then
         # Let's set up Apache now
         create_apache_vh_nintendo
         #create_apache_vh_wiimmfi
-        apache_mods     # Enable reverse proxy mod and PHP 7.4
+        #apache_mods    #Already called in create_apache_vh_nintendo # Enable reverse proxy mod and PHP 7.4
         install_website # Install the web contents for CoWFC
-        config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
-        re              # Set up reCaptcha
+        config_mysql    # We will set up the mysql password and create our first user
+        re              # Set up reCaptcha (Disabled)
         add-cron        # Makes it so master server can start automatically on boot
         set-server-name # Set your server's name
         cat >>/etc/apache2/apache2.conf <<EOF
@@ -459,7 +490,8 @@ EOF
     # DO NOT PUT COMMANDS UNDER THIS FI
     fi
 else
-    echo "Sorry, you do not appear to be running a supported Opperating System."
-    echo "Please make sure you are running Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 20.04, and try again!"
+    echo "Your platform is not currently supported !!"
+    echo "Please open an issue and request support for this platform."
+    echo "Please check : https://github.com/EnergyCube/cowfc_installer"
     exit 1
 fi
