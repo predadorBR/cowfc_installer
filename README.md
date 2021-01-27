@@ -5,7 +5,7 @@ This script installs the CoWFC front-end and back-end from https://github.com/En
 
 ✅ Support Ubuntu 14.04 & 16.04
 
-✅ Support Debian 10
+✅ Support Debian 10 (❌ LAN Reported not working ! Only tested on a VPS using a domain name)
 
 🔨 Contributing
 -------
