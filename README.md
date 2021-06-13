@@ -3,7 +3,7 @@ CoWFC Installer
 
 This script installs the CoWFC front-end and back-end from https://github.com/EnergyCube/CoWFC
 
-✅ Support Ubuntu 14.04 & 16.04
+✅ Support Ubuntu 14.04 & 16.04 (& 16.04 AWS)
 
 ✅ Support Debian 10 (❌ LAN Reported not working ! Only tested on a VPS using a domain name)
 
@@ -26,6 +26,8 @@ Create a new issue and communicate all informations that you can.
 
 After system reboot : `cd /var/www && ./cowfc.sh`
 
+Remplace cowfc.sh with cowfc_for_aws_ubuntu_16.sh if you are using AWS.
+
 ![image](https://www.debian.org/logos/openlogo-nd-25.png) Debian
 ----
 
@@ -42,8 +44,9 @@ This script comes in 3 phases for Ubuntu. Each phase involves a reboot
 This script comes in 1 phases for Debian.
 -	Install CoWFC & Reboot
 
-Ubuntu script use PHP 7.1 & MySQL<br/>
-Debian script use PHP 7.4 & MariaDB
+Ubuntu script use PHP 7.1 & MySQL\
+Debian script use PHP 7.4 & MariaDB\
+AWS Ubuntu 16.04 script use PHP 7.0 & MySQL
 
 ❤️ Credits
 -------
