@@ -52,5 +52,5 @@ AWS Ubuntu 16.04 script use PHP 7.0 & MySQL
 
 ❤️ Credits
 -------
-kyle95wm
+kyle95wm\
 EnergyCube
