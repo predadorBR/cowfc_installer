@@ -37,9 +37,9 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # We will test internet connectivity using ping
-if ping -c 2 github.com >/dev/nul; then
+if ping -c 2 github.com >/dev/null; then
     echo "Internet is OK"
-elif ping -c 2 torproject.org >/dev/nul; then
+elif ping -c 2 torproject.org >/dev/null; then
     echo "Internet is OK"
 else
     echo "Internet Connection Test Failed!"
@@ -50,7 +50,7 @@ fi
 # We'll assume the user is from an English locale
 if [ ! -f /var/www/.locale-done ]; then
     if ! locale-gen en_US.UTF-8; then
-        apt-get install -y language-pack-en-base
+        apt install -y language-pack-en-base
     fi
 fi
 export LANG=en_US.UTF-8
@@ -66,9 +66,9 @@ IP=""             # Used for user input
 interface=""      # Used for user input
 mod1="proxy"      # This is a proxy mod that is dependent on the other 2
 mod2="proxy_http" # This is related to mod1
-mod3="php7.1"
+mod3="php7.4"
 UPDATE_FILE="$0.tmp"
-UPDATE_BASE="https://raw.githubusercontent.com/EnergyCube/cowfc_installer/master/cowfc.sh"
+UPDATE_BASE="https://raw.githubusercontent.com/mwaddip/cowfc_installer/master/cowfc.sh"
 # Functions
 
 function update() {
@@ -232,15 +232,17 @@ function dns_config() {
     # This function will configure dnsmasq
     echo "----------Lets configure DNSMASQ now----------"
     sleep 3s
-    # Decided to take this step out, as doing so will create what's known as an open resolver.
+    # The snippet below will create what's known as an open resolver.
     # Having an open resolver is a security risk and is not a good idea.
-    # This means that DNS will be restricted to ONLY looking up Nintendo domains.
-    #echo "Adding Google DNS (8.8.8.8) to config"
+    # As it would break the script to disable it from the start, it's enabled
+    # only temporarily and disabled after the script is finished.
+    # It means that DNS will be restricted to ONLY looking up Nintendo domains.
+    echo "Temporarily adding Google DNS (8.8.8.8) to config"
     # We add Google's DNS server to our server so that anyone with our DNS server can still resolve hostnames to IP
     # addresses outside our DNS server. Useful for Dolphin testing
-    #cat >>/etc/dnsmasq.conf <<EOF
-    #server=8.8.8.8
-    #EOF
+    cat >>/etc/dnsmasq.conf <<EOF
+server=8.8.8.8
+EOF
     #sleep 2s
     echo "What is your EXTERNAL IP?"
     echo "NOTE: If you plan on using this on a LAN, put the IP of your Linux system instead"
@@ -265,50 +267,57 @@ EOF
     echo "DNSMasq setup completed!"
     clear
     service dnsmasq restart
+    touch "/var/www/.dnsmasq-added"
     clear
 }
 
 function install_required_packages() {
-    echo "echo "Installing required packages...""
+  echo "echo "Installing required packages...""
     # Add required package requires packages
     sudo apt install curl git net-tools dnsmasq -y
     # Add PHP 7.1 repo
-    if [ ! -f "/var/www/.php71-added" ]; then
-        echo "Adding the PHP 7.1 repository. Please follow any prompts."
+    if [ ! -f "/var/www/.php74-added" ]; then
+        echo "Adding the PHP 7.4 repository. Please follow any prompts."
         if ! add-apt-repository ppa:ondrej/php; then
-            apt-get install --force-yes software-properties-common python-software-properties -y
+            apt install  software-properties-common python-software-properties -y
             add-apt-repository ppa:ondrej/php
         fi
         sleep 2s
         echo "Creating file to tell the script you already added the repo"
-        touch "/var/www/.php71-added"
+        touch "/var/www/.php74-added"
         echo "I will now reboot your server to free up resources for the next phase"
         sleep 3s
         reboot
         exit
     else
-        echo "The PHP 7.1 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php71-added' to remove the file which prevents the repository from being added again."
+        echo "The PHP 7.4 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php74-added' to remove the file which prevents the repository from being added again."
     fi
     # Fix dpkg problems that happened somehow
     dpkg --configure -a
-    echo "Updating & installing PHP 7.1 onto your system..."
-    apt-get update
-    apt-get install --force-yes php7.1 -y
+    echo "Updating & installing PHP 7.4 onto your system..."
+    apt update
     # Install the other required packages
-    apt-get install --force-yes apache2 python2.7 python-twisted dnsmasq git curl -y
+    apt install -y apache2 php7.4 php7.4-mysql php7.4-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
+    ln -s /usr/bin/python2.7 /usr/bin/python
+  
+    if [ -f /etc/lsb-release ]; then
+      if grep -q "22.04" /etc/lsb-release; then
+        systemctl disable systemd-resolved.service
+        systemctl stop systemd-resolved.service
+	systemctl start dnsmasq.service
+      fi
+    fi
+
 }
 function config_mysql() {
     echo "We will now configure MYSQL server."
     debconf-set-selections <<<'mysql-server mysql-server/root_password password passwordhere'
     debconf-set-selections <<<'mysql-server mysql-server/root_password_again password passwordhere'
-    apt-get -y install mysql-server
+    apt -y install mysql-server
     # We will now set the new mysql password in the AdminPage.php file.
     # Do not change "passwordhere", as this will be the base for replacing it later
     # The below sed command has NOT been tested so we don't know if this will work or not.
     #sed -i -e 's/passwordhere/passwordhere/g' /var/www/html/_site/AdminPage.php
-    # Next we will install two more packages to make mysql and sqlite work with PHP
-    apt-get install --force-yes php7.1-mysql -y
-    apt-get install --force-yes sqlite php7.1-sqlite3 -y
     # Now we will set up our first admin user
     echo "Now we're going to set up our first Admin Portal user."
     read -rp "Please enter the username you wish to use: " firstuser
@@ -326,7 +335,7 @@ function config_mysql() {
     echo "Now importing dumped cowfc database..."
     mysql -u root -ppasswordhere cowfc </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-    echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
+    echo "insert into users (\`Username\`, \`Password\`, \`Rank\`) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
 }
 function re() {
     echo "For added security, we recommend setting up Google's reCaptcha.
@@ -379,7 +388,7 @@ EOF
         chmod 777 /start-altwfc.sh
         mkdir -p /cron-logs
         if ! command -v crontab; then
-            apt-get install cron -y
+            apt install cron -y
         fi
         echo "Creating the cron job now!"
         echo "@reboot sh /start-altwfc.sh >/cron-logs/cronlog 2>&1" >/tmp/alt-cron
@@ -395,7 +404,7 @@ function install_website() {
     #wget https://github.com/BlackrockDigital/startbootstrap-sb-admin/archive/gh-pages.zip -O sb-admin.zip
     #unzip sb-admin.zip
     #if [ $? != "0" ] ; then
-    #	apt-get --force-yes install unzip -y
+    #	apt  install unzip -y
     #	unzip sb-admin.zip
     #fi
     # Copy required directories and files to /var/www/html
@@ -433,14 +442,14 @@ fi
 # but if we're running Debian, it should be enough for what we need this check
 # to do.
 if [ -f /etc/lsb-release ]; then
-    if grep -q "14.04" /etc/lsb-release || grep -q "16.04" /etc/lsb-release || grep -q "20.04" /etc/lsb-release; then
+    if grep -q "22.04" /etc/lsb-release; then
         CANRUN="TRUE"
     elif [ -f /var/www/.aws_install ]; then
         CANRUN="TRUE"
     else
         echo "It looks like you are not running on a supported OS."
         echo "Please open an issue and request support for this platform."
-        echo "Actually Ubuntu 14.04, 16.04 and 20.04 are supported."
+        echo "Only Ubuntu 22.04 is supported."
     fi
 fi
 
@@ -450,7 +459,7 @@ if [ "$CANRUN" == "TRUE" ]; then
     # Put commands or functions on these lines to continue with script execution.
     # The first thing we will do is to update our package repos but let's also make sure that the user is running the script in the proper directory /var/www
     if [ "$PWD" == "/var/www" ]; then
-        apt-get update
+        apt update
         # Let's install required packages first.
         install_required_packages
         # Then we will check to see if the Gits for CoWFC and dwc_network_server_emulator exist
@@ -479,7 +488,9 @@ if [ "$CANRUN" == "TRUE" ]; then
             chmod 777 /var/www/dwc_network_server_emulator/ -R
         fi
         # Configure DNSMASQ
-        dns_config
+        if [ ! -f /var/www/dnsmasq-added ]; then
+	   dns_config
+	fi
         # Let's set up Apache now
         create_apache_vh_nintendo
         create_apache_vh_wiimmfi
@@ -499,6 +510,9 @@ EOF
         # Let's make our hidden file so that our script will know that we've already installed the server
         # This will prevent accidental re-runs
         echo "Finishing..."
+	# Remove open resolver
+	sed -i '/server=8.8.8.8/d' /etc/dnsmasq.conf
+	systemctl reload dnsmasq.service
         touch /etc/.dwc_installed
         echo "Thank you for installing CoWFC."
         echo "If you wish to access the admin GUI, please go to http://$IP/?page=admin&section=Dashboard"
@@ -511,7 +525,7 @@ EOF
     # DO NOT PUT COMMANDS UNDER THIS FI
     fi
 else
-    echo "Sorry, you do not appear to be running a supported Opperating System."
-    echo "Please make sure you are running Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 20.04, and try again!"
+    echo "Sorry, you do not appear to be running a supported Operating System."
+    echo "Please make sure you are running Ubuntu 22.04, and try again!"
     exit 1
 fi
