@@ -23,7 +23,7 @@ Create a new issue and communicate all informations that you can.
 
 ![image](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Ubuntu_logo.svg/100px-Ubuntu_logo.svg.png)
 
-`mkdir /var/www ; cd /var/www && wget https://raw.githubusercontent.com/mwaddip/cowfc_installer/master/cowfc.sh && chmod +x cowfc.sh && ./cowfc.sh`
+`mkdir /var/www ; cd /var/www && wget https://raw.githubusercontent.com/jeffabenr/cowfc_installer/master/cowfc.sh && chmod +x cowfc.sh && ./cowfc.sh`
 
 After system reboot : `cd /var/www && ./cowfc.sh`
 
