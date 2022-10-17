@@ -68,7 +68,7 @@ mod1="proxy"      # This is a proxy mod that is dependent on the other 2
 mod2="proxy_http" # This is related to mod1
 mod3="php7.4"
 UPDATE_FILE="$0.tmp"
-UPDATE_BASE="https://raw.githubusercontent.com/mwaddip/cowfc_installer/master/cowfc.sh"
+UPDATE_BASE="https://raw.githubusercontent.com/jeffabenr/cowfc_installer/master/cowfc.sh"
 # Functions
 
 function update() {
@@ -302,9 +302,9 @@ function install_required_packages() {
   
     if [ -f /etc/lsb-release ]; then
       if grep -q "22.04" /etc/lsb-release; then
-        systemctl disable systemd-resolved.service
-        systemctl stop systemd-resolved.service
-	systemctl start dnsmasq.service
+        #systemctl disable systemd-resolved.service
+        # systemctl stop systemd-resolved.service
+	#systemctl start dnsmasq.service
       fi
     fi
 
