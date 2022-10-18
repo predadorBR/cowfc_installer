@@ -50,6 +50,13 @@ Ubuntu script use PHP 7.4 & MySQL\
 Debian script use PHP 7.4 & MariaDB\
 AWS Ubuntu 16.04 script use PHP 7.0 & MySQL
 
+Solução de Problemas
+ubuntu 22.04
+a porta do systemd-resolved usando a mesma porta do dnsmasq ou faltando systemd-resolved para iniciar o dnsmasq
+basta trocar a porta do systemd-resolved para resolver o problema definitivamente
+link da solução
+https://linuxavante.com/ubuntu-como-liberar-a-porta-53-usada-por-systemd-resolvido
+
 ❤️ Credits
 -------
 kyle95wm\
