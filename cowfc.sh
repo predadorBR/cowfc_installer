@@ -300,13 +300,13 @@ function install_required_packages() {
     apt install -y apache2 php7.4 php7.4-mysql php7.4-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
     ln -s /usr/bin/python2.7 /usr/bin/python
   
-    if [ -f /etc/lsb-release ]; then
-      if grep -q "22.04" /etc/lsb-release; then
+    #if [ -f /etc/lsb-release ]; then
+     # if grep -q "22.04" /etc/lsb-release; then
         #systemctl disable systemd-resolved.service
         # systemctl stop systemd-resolved.service
 	#systemctl start dnsmasq.service
-      fi
-    fi
+     # fi
+   # fi
 
 }
 function config_mysql() {
