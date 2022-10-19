@@ -285,7 +285,7 @@ function install_required_packages() {
         fi
         sleep 2s
         echo "Creating file to tell the script you already added the repo"
-        touch "/var/www/.php70-added"
+        touch "/var/www/.php74-added"
         echo "I will now reboot your server to free up resources for the next phase"
         sleep 3s
         reboot
@@ -298,8 +298,9 @@ function install_required_packages() {
     echo "Updating & installing PHP 7.0 onto your system..."
     apt-get update
     apt-get install --force-yes php7.0 -y
-    # Install the other required packages
-    apt-get install --force-yes apache2 python2.7 python-twisted dnsmasq git curl -y
+      # Install the other required packages
+    apt install -y apache2 php7.4 php7.4-mysql php7.4-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
+   ln -s /usr/bin/python2.7 /usr/bin/python
 }
 function config_mysql() {
     echo "We will now configure MYSQL server. Default username is root and password is passwordhere, you can change it later."
@@ -332,7 +333,8 @@ function config_mysql() {
     echo "Now importing dumped cowfc database..."
     mysql -u root -ppasswordhere cowfc </var/www/CoWFC/SQL/cowfc.sql
     echo "Now inserting user $firstuser into the database with password $password, hashed as $hash."
-    echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
+    #echo "insert into users (Username, Password, Rank) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
+    echo "insert into users (\`Username\`, \`Password\`, \`Rank\`) values ('$firstuser','$hash','$firstuserrank');" | mysql -u root -ppasswordhere cowfc
 }
 function re() {
     echo "For added security, we recommend setting up Google's reCaptcha.
