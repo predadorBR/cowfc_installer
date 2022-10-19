@@ -29,6 +29,11 @@ After system reboot : `cd /var/www && ./cowfc.sh`
 
 Replace cowfc.sh with cowfc_for_aws_ubuntu_16.sh if you are using AWS.
 
+Criar Usuário web
+
+chmod +x criar_usuario.sh && ./criar_usuario.sh
+
+
 ![image](https://www.debian.org/logos/openlogo-nd-25.png) Debian
 ----
 
