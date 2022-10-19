@@ -3,7 +3,7 @@ CoWFC Installer
 
 This script installs the CoWFC front-end and back-end from https://github.com/EnergyCube/CoWFC
 
-✅ Support Ubuntu 22.04 (& 16.04 AWS)
+✅ Support Ubuntu 22.04 (& 20.04 AWS)
 
 
 ✅ Support Debian 10 (❌ LAN Reported not working ! Only tested on a VPS using a domain name)
