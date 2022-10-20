@@ -57,16 +57,28 @@ AWS Ubuntu 16.04 script use PHP 7.0 & MySQL
 
 Solução de Problemas
 ubuntu 22.04
-a porta do systemd-resolved usando a mesma porta do dnsmasq ou faltando systemd-resolved para iniciar o dnsmasq
-basta trocar a porta do systemd-resolved para resolver o problema definitivamente
+a porta do systemd-resolved usando a mesma porta do dnsmasq
+ou faltando systemd-resolved para iniciar o dnsmasq
+basta trocar a porta do systemd-resolved para resolver
+o problema definitivamente
 Comando
 $sudo nano /etc/systemd/resolved.conf
+
 DNS=1.1.1.1
+
 DNSStubListener=no
+
 $sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
 e reiniciar
+
 link da solução
 https://linuxavante.com/ubuntu-como-liberar-a-porta-53-usada-por-systemd-resolvido
+
+lista branca 
+Mario Kart - RMC
+
+DNS - amazon aws UBUNTU 22.04 com ip elástico com as portas abertas - 52.67.233.255 - funcionando 
 
 ❤️ Credits
 -------
