@@ -47,7 +47,7 @@ IP=""             # Used for user input
 interface=""      # Used for user input
 mod1="proxy"      # This is a proxy mod that is dependent on the other 2
 mod2="proxy_http" # This is related to mod1
-mod3="php8.3"
+mod3="php8.2"
 UPDATE_FILE="$0.tmp"
 UPDATE_BASE="https://raw.githubusercontent.com/predadorBR/cowfc_installer/master/cowfc.sh"
 # Functions
@@ -256,33 +256,33 @@ function install_required_packages() {
   echo "echo "Installing required packages...""
     # Add required package requires packages
     sudo apt install curl git net-tools dnsmasq -y
-    # Add PHP 8.3 repo
-    if [ ! -f "/var/www/.php83-added" ]; then
-        echo "Adding the PHP 8.3 repository. Please follow any prompts."
+    # Add PHP 8.2 repo
+    if [ ! -f "/var/www/.php82-added" ]; then
+        echo "Adding the PHP 8.2 repository. Please follow any prompts."
         if ! add-apt-repository ppa:ondrej/php; then
             apt install  software-properties-common python-software-properties -y
             add-apt-repository ppa:ondrej/php
         fi
         sleep 2s
         echo "Creating file to tell the script you already added the repo"
-        touch "/var/www/.php83-added"
+        touch "/var/www/.php82-added"
         echo "I will now reboot your server to free up resources for the next phase"
         sleep 3s
         reboot
         exit
     else
-        echo "The PHP 8.3 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php83-added' to remove the file which prevents the repository from being added again."
+        echo "The PHP 8.2 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php82-added' to remove the file which prevents the repository from being added again."
     fi
     # Fix dpkg problems that happened somehow
     dpkg --configure -a
-    echo "Updating & installing PHP 8.3 onto your system..."
+    echo "Updating & installing PHP 8.2 onto your system..."
     apt update
     # Install the other required packages
-    apt install -y apache2 php8.3 php8.3-mysql php8.3-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
+    apt install -y apache2 php8.2 php8.2-mysql php8.2-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
     ln -s /usr/bin/python2.7 /usr/bin/python
   
     #if [ -f /etc/lsb-release ]; then
-     # if grep -q "24.04" /etc/lsb-release; then
+     # if grep -q "22.04" /etc/lsb-release; then
         #systemctl disable systemd-resolved.service
         # systemctl stop systemd-resolved.service
 	#systemctl start dnsmasq.service
@@ -423,14 +423,14 @@ fi
 # but if we're running Debian, it should be enough for what we need this check
 # to do.
 if [ -f /etc/lsb-release ]; then
-    if grep -q "24.04" /etc/lsb-release; then
+    if grep -q "22.04" /etc/lsb-release; then
         CANRUN="TRUE"
     elif [ -f /var/www/.aws_install ]; then
         CANRUN="TRUE"
     else
         echo "It looks like you are not running on a supported OS."
         echo "Please open an issue and request support for this platform."
-        echo "Only Ubuntu 24.04 is supported."
+        echo "Only Ubuntu 22.04 is supported."
     fi
 fi
 
@@ -475,7 +475,7 @@ if [ "$CANRUN" == "TRUE" ]; then
         # Let's set up Apache now
         create_apache_vh_nintendo
         create_apache_vh_wiimmfi
-        apache_mods     # Enable reverse proxy mod and PHP 8.3
+        apache_mods     # Enable reverse proxy mod and PHP 8.2
         install_website # Install the web contents for CoWFC
         config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
         re              # Set up reCaptcha
@@ -507,6 +507,6 @@ EOF
     fi
 else
     echo "Sorry, you do not appear to be running a supported Operating System."
-    echo "Please make sure you are running Ubuntu 24.04, and try again!"
+    echo "Please make sure you are running Ubuntu 22.04, and try again!"
     exit 1
 fi
