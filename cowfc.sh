@@ -3,21 +3,11 @@ echo "########## !!!!! WARNING !!!!! ##########"
 echo "Recently, Wiimmfi has undergone some changes which makes it so that their servers are more secure from hackers."
 echo "Having said that, this means that the CoWFC fork will not be getting the security patch, as it is unclear how it is possible. For the time being, you accept that you run your own server with a chance that hackers will be able to execute code over the MKW network."
 echo "This might mean that hackers can in theory, brick consoles."
-read -rp "Please type ACCEPT to accept the risk: "
-if [ "$REPLY" != "ACCEPT" ]; then
-    echo "Verification FAILED!"
-    exit 2
-fi
-read -rp "Just in case you were trigger-happy, I'll need you to type ACCEPT.: "
-if [ "$REPLY" != "ACCEPT" ]; then
-    echo "Verification FAILED!"
-    exit 2
-fi
 # DWC Network Installer script by kyle95wm/beanjr/EnergyCube - re-written for CoWFC
 # Warn Raspberry Pi users - probably a better way of doing this
 if [ -d /home/pi/ ]; then
     echo "THIS SCRIPT IS NOT SUPPORTED ON RASPBERRY PI!"
-    echo "Please use the older script here: https://github.com/EnergyCube/dwc_network_installer"
+    echo "Please use the older script here: https://github.com/predadorBR/dwc_network_installer"
     exit 1
 fi
 # Check if we already installed the server
@@ -66,9 +56,9 @@ IP=""             # Used for user input
 interface=""      # Used for user input
 mod1="proxy"      # This is a proxy mod that is dependent on the other 2
 mod2="proxy_http" # This is related to mod1
-mod3="php7.4"
+mod3="php8.3"
 UPDATE_FILE="$0.tmp"
-UPDATE_BASE="https://raw.githubusercontent.com/jeffabenr/cowfc_installer/master/cowfc.sh"
+UPDATE_BASE="https://raw.githubusercontent.com/predadorBR/cowfc_installer/master/cowfc.sh"
 # Functions
 
 function update() {
@@ -275,33 +265,33 @@ function install_required_packages() {
   echo "echo "Installing required packages...""
     # Add required package requires packages
     sudo apt install curl git net-tools dnsmasq -y
-    # Add PHP 7.1 repo
-    if [ ! -f "/var/www/.php74-added" ]; then
-        echo "Adding the PHP 7.4 repository. Please follow any prompts."
+    # Add PHP 8.3 repo
+    if [ ! -f "/var/www/.php83-added" ]; then
+        echo "Adding the PHP 8.3 repository. Please follow any prompts."
         if ! add-apt-repository ppa:ondrej/php; then
             apt install  software-properties-common python-software-properties -y
             add-apt-repository ppa:ondrej/php
         fi
         sleep 2s
         echo "Creating file to tell the script you already added the repo"
-        touch "/var/www/.php74-added"
+        touch "/var/www/.php83-added"
         echo "I will now reboot your server to free up resources for the next phase"
         sleep 3s
         reboot
         exit
     else
-        echo "The PHP 7.4 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php74-added' to remove the file which prevents the repository from being added again."
+        echo "The PHP 8.3 repo is already added. If you believe this to ben an error, please type 'rm -rf /var/www/.php83-added' to remove the file which prevents the repository from being added again."
     fi
     # Fix dpkg problems that happened somehow
     dpkg --configure -a
-    echo "Updating & installing PHP 7.4 onto your system..."
+    echo "Updating & installing PHP 8.3 onto your system..."
     apt update
     # Install the other required packages
-    apt install -y apache2 php7.4 php7.4-mysql php7.4-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
+    apt install -y apache2 php8.3 php8.3-mysql php8.3-sqlite3 sqlite python2.7 python2.7-dev -y && curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2.7 get-pip.py && pip install twisted
     ln -s /usr/bin/python2.7 /usr/bin/python
   
     #if [ -f /etc/lsb-release ]; then
-     # if grep -q "22.04" /etc/lsb-release; then
+     # if grep -q "24.04" /etc/lsb-release; then
         #systemctl disable systemd-resolved.service
         # systemctl stop systemd-resolved.service
 	#systemctl start dnsmasq.service
@@ -442,14 +432,14 @@ fi
 # but if we're running Debian, it should be enough for what we need this check
 # to do.
 if [ -f /etc/lsb-release ]; then
-    if grep -q "22.04" /etc/lsb-release; then
+    if grep -q "24.04" /etc/lsb-release; then
         CANRUN="TRUE"
     elif [ -f /var/www/.aws_install ]; then
         CANRUN="TRUE"
     else
         echo "It looks like you are not running on a supported OS."
         echo "Please open an issue and request support for this platform."
-        echo "Only Ubuntu 22.04 is supported."
+        echo "Only Ubuntu 24.04 is supported."
     fi
 fi
 
@@ -465,7 +455,7 @@ if [ "$CANRUN" == "TRUE" ]; then
         # Then we will check to see if the Gits for CoWFC and dwc_network_server_emulator exist
         if [ ! -d "/var/www/CoWFC" ]; then
             echo "Git for CoWFC does not exist in /var/www/"
-            while ! git clone https://github.com/EnergyCube/CoWFC.git && [ "$C1" -le "4" ]; do
+            while ! git clone https://github.com/predadorBR/CoWFC.git && [ "$C1" -le "4" ]; do
                 echo "GIT CLONE FAILED! Retrying....."
                 ((C1 = C1 + 1))
             done
@@ -476,7 +466,7 @@ if [ "$CANRUN" == "TRUE" ]; then
         fi
         if [ ! -d "/var/www/dwc_network_server_emulator" ]; then
             echo "Git for dwc_network_server_emulator does not exist in /var/www"
-            while ! git clone https://github.com/EnergyCube/dwc_network_server_emulator.git && [ "$C2" -le "4" ]; do
+            while ! git clone https://github.com/predadorBR/dwc_network_server_emulator.git && [ "$C2" -le "4" ]; do
                 echo "GIT CLONE FAILED! Retrying......"
                 ((C2 = C2 + 1))
             done
@@ -494,7 +484,7 @@ if [ "$CANRUN" == "TRUE" ]; then
         # Let's set up Apache now
         create_apache_vh_nintendo
         create_apache_vh_wiimmfi
-        apache_mods     # Enable reverse proxy mod and PHP 7.1
+        apache_mods     # Enable reverse proxy mod and PHP 8.3
         install_website # Install the web contents for CoWFC
         config_mysql    # We will set up the mysql password as "passwordhere" and create our first user
         re              # Set up reCaptcha
@@ -526,6 +516,6 @@ EOF
     fi
 else
     echo "Sorry, you do not appear to be running a supported Operating System."
-    echo "Please make sure you are running Ubuntu 22.04, and try again!"
+    echo "Please make sure you are running Ubuntu 24.04, and try again!"
     exit 1
 fi
