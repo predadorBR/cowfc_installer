@@ -11,16 +11,7 @@ if [ -d /home/pi/ ]; then
     exit 1
 fi
 # Check if we already installed the server
-if [ -f /etc/.dwc_installed ]; then
-    echo "You already installed CoWFC. There is no need to re-run it.
-Perhaps some time down the road we can offer an uninstall option.
-You shouldn't have anything else on it anyways."
-    echo "If you only want to RESET your dwc server, just delete gpcm.db and storage.db (don't forget to reboot of course)"
-    echo "In you want to UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
-nuke your system, re-install everything with this script and restore gpcm.db and storage.db"
-    echo "And if you wish to uninstall everything, just nuke your system."
-    #exit 999
-fi
+
 # ensure running as root
 if [ "$(id -u)" != "0" ]; then
     exec sudo "$0" "$@"
