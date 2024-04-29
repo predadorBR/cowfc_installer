@@ -19,7 +19,7 @@ You shouldn't have anything else on it anyways."
     echo "In you want to UPDATE your actual installation, the best way is to save gpcm.db and storage.db (in dwc_network_server_emulator),
 nuke your system, re-install everything with this script and restore gpcm.db and storage.db"
     echo "And if you wish to uninstall everything, just nuke your system."
-    exit 999
+    #exit 999
 fi
 # ensure running as root
 if [ "$(id -u)" != "0" ]; then
